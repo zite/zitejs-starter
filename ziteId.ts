@@ -1,0 +1,86 @@
+import { parse } from "@babel/parser";
+import MagicString from "magic-string";
+import path from "path";
+import { Plugin } from "vite";
+import { walk } from "estree-walker";
+
+const validExtensions = new Set([".jsx", ".tsx"]);
+
+export function ziteId(): Plugin {
+  const cwd = process.cwd();
+  return {
+    name: "vite-plugin-zite-id",
+    enforce: "pre",
+    async transform(code, id) {
+      if (
+        !validExtensions.has(path.extname(id)) ||
+        id.includes("node_modules")
+      ) {
+        return null;
+      }
+
+      const relativePath = path.relative(cwd, id);
+
+      try {
+        const ast = parse(code, {
+          sourceType: "module",
+          plugins: ["jsx", "typescript"],
+        }) as any;
+
+        const magicString = new MagicString(code);
+
+        walk(ast, {
+          enter(_node) {
+            const node = _node as any;
+
+            if (node.type === "JSXElement") {
+              const openingElement = node.openingElement;
+              const children = node.children;
+
+              const elementName = openingElement.name;
+              const isFragment =
+                // Check for <React.Fragment>
+                (elementName.type === "JSXMemberExpression" &&
+                  elementName.object.name === "React" &&
+                  elementName.property.name === "Fragment") ||
+                // Check for shorthand fragment <>
+                (elementName.type === "JSXIdentifier" &&
+                  elementName.name === "Fragment");
+
+              // Don't add attributes to fragments
+              if (isFragment) {
+                return;
+              }
+
+              const line = openingElement.loc?.start?.line ?? 0;
+              const col = openingElement.loc?.start?.column ?? 0;
+              const dataComponentId = `${relativePath}|${line}|${col}`;
+
+              let attributes = ` data-zite-id="${dataComponentId}"`;
+
+              // Check if the component has simple children
+              if (
+                children.length === 1 &&
+                (children[0].type === "JSXText" ||
+                  children[0].type === "StringLiteral" ||
+                  (children[0].type === "JSXExpressionContainer" &&
+                    children[0].expression.type === "StringLiteral"))
+              ) {
+                attributes += ` data-zite-editable="true"`;
+              }
+
+              magicString.appendLeft(openingElement.name.end ?? 0, attributes);
+            }
+          },
+        });
+        return {
+          code: magicString.toString(),
+          map: magicString.generateMap({ hires: true }),
+        };
+      } catch (error) {
+        console.error(`Error processing file ${relativePath}:`, error);
+        return null;
+      }
+    },
+  };
+}

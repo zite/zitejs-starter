@@ -1,0 +1,17 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@zite/*": ["./src/__zite__/*"],
+      "zite-endpoints-sdk": ["./src/__zite__/sdk.ts"],
+      "zite-auth-sdk": ["./src/__zite__/auth.ts"],
+      "zite-file-upload-sdk": ["./src/__zite__/fileUpload.ts"]
+    }
+  }
+}
