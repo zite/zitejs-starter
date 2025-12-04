@@ -16,18 +16,16 @@ export const requestZiteEndpoint = async ({
   const SERVER_URL = window.isLocalDev
     ? "http://localhost:2506"
     : window.isStaging
-      ? "https://staging-workflows.fillout.co"
-      : window.isProduction
-        ? "https://workflows.fillout.com"
-        : // antony TODO eventually we can phase this out and
-          // point everyone to workflows.fillout.com
-          "https://server.zite.com";
+    ? "https://staging-workflows.fillout.co"
+    : window.isProduction
+    ? "https://workflows.fillout.com"
+    : // antony TODO eventually we can phase this out and
+      // point everyone to workflows.fillout.com
+      "https://server.zite.com";
 
   const host = window.location.host;
   const mode =
-    host.startsWith("zite-editor-") ||
-    host.endsWith(".ziteapp.com") ||
-    host.endsWith(".zitedev.com")
+    host.endsWith(".zite-dev-sandbox.com") || host.endsWith(".zite-sandbox.com")
       ? "preview"
       : "live";
 
@@ -57,14 +55,14 @@ export const requestZiteEndpoint = async ({
           "content-type": "application/json;charset=UTF-8",
         },
         signal,
-      },
+      }
     );
 
     if (!fetchResponse.ok) {
       const errorData = await fetchResponse.json();
       throw new Error(
         `Error with endpoint ${workflowId}: ${errorData.message}` ||
-          `Error with endpoint ${workflowId} status: ${fetchResponse.status}`,
+          `Error with endpoint ${workflowId} status: ${fetchResponse.status}`
       );
     }
 
