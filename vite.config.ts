@@ -13,7 +13,10 @@ export default defineConfig({
   plugins: [
     react(),
     insertHtml({
-      headPrepend: [h("script", { src: "https://zite.com/app-runtime.js" })],
+      // headPrepend: [h("script", { src: "https://zite.com/app-runtime.js" })],
+      headPrepend: [
+        h("script", { src: "http://localhost:2500/runtime/app-runtime.js" }),
+      ], // dom todo
     }),
     ziteId(),
   ],
