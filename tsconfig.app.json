@@ -1,7 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "tsBuildInfoFile": "./.tsbuildinfo",
     "target": "ES2020",
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
@@ -19,10 +19,16 @@
     /* import React from "react" */
     "allowSyntheticDefaultImports": true,
 
-    /* Linting */
+    /* Incremental compilation */
+    "incremental": true,
+
+    /* Linting - matching typechecker.ts settings */
+    /* We don't want to be too strict, this is mainly focused on whether the app */
+    /* compiles, or if there are explicit type errors like passing wrong props */
     "strict": false,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitAny": false,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
