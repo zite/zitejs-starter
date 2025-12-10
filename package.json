@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "update-tsbuildinfo": "echo '[]' > overrides.json && npx tsgo --noEmit -p tsconfig.app.json --pretty && rm overrides.json"
+    "update-tsbuildinfo": "npx tsgo --noEmit -p tsconfig.app.json --pretty"
   },
   "dependencies": {
     "@fillout/react": "^3.0.0",
