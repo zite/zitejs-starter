@@ -69,6 +69,10 @@ export default defineConfig({
         __dirname,
         "./src/__zite__/fileUpload.ts"
       ),
+      "zite-integrations-backend-sdk": path.resolve(
+        __dirname,
+        "./src/__zite__/integrations.ts"
+      ),
     },
   },
 });
