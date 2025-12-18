@@ -27,10 +27,11 @@ async function main() {
 
   for (const name of endpointNames) {
     // Create wrapper that imports SDK and endpoint
+    // Paths are relative to resolveDir which is ${baseDir}/src
     const wrapperCode = `
-import * as sdk from '../__zite__/integrations';
+import * as sdk from './__zite__/integrations';
 Object.assign(globalThis, sdk);
-import endpoint from '../api/${name}';
+import endpoint from './api/${name}';
 globalThis.__endpoint = endpoint;
 `;
 
