@@ -47,6 +47,7 @@
     "clsx": "^2.1.1",
     "cmdk": "1.0.0",
     "date-fns": "^3.6.0",
+    "esbuild": "^0.24.2",
     "express": "^4.21.2",
     "framer-motion": "^12.5.0",
     "lucide-react": "^0.476.0",
