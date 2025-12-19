@@ -10,6 +10,25 @@
  */
 
 import * as esbuild from 'esbuild';
+import * as path from 'path';
+
+/**
+ * Create an esbuild plugin that resolves SDK aliases
+ * Maps 'zite-integrations-backend-sdk' -> './__zite__/integrations.ts'
+ * This is needed because endpoint files use aliased imports but esbuild
+ * doesn't read tsconfig paths by default.
+ */
+function createAliasPlugin(baseDir) {
+  return {
+    name: 'zite-alias',
+    setup(build) {
+      // Handle zite-integrations-backend-sdk alias
+      build.onResolve({ filter: /^zite-integrations-backend-sdk$/ }, () => ({
+        path: path.resolve(baseDir, 'src/__zite__/integrations.ts'),
+      }));
+    },
+  };
+}
 
 async function main() {
   const args = process.argv.slice(2);
@@ -24,6 +43,9 @@ async function main() {
   const [baseDir, ...endpointNames] = args;
   const results = {};
   const errors = [];
+
+  // Create alias plugin once for all endpoints
+  const aliasPlugin = createAliasPlugin(baseDir);
 
   for (const name of endpointNames) {
     // Create wrapper that imports SDK and endpoint
@@ -47,6 +69,7 @@ globalThis.__endpoint = endpoint;
         format: 'esm',
         platform: 'browser',
         logLevel: 'silent',
+        plugins: [aliasPlugin],
       });
 
       if (result.outputFiles && result.outputFiles.length > 0) {
