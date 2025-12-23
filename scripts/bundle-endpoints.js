@@ -3,10 +3,11 @@
  *
  * Usage: node scripts/bundle-endpoints.js <baseDir> <endpoint1> <endpoint2> ...
  *
- * Output: JSON object with bundled code keyed by endpoint name
- * { "getUsers": "bundled code...", "createUser": "bundled code..." }
- *
- * Errors are output as JSON: { "error": "message" }
+ * Output: JSON object with bundled code and per-endpoint errors
+ * {
+ *   "bundledEndpoints": { "getUsers": "bundled code...", "createUser": "bundled code..." },
+ *   "endpointErrors": { "brokenEndpoint": "Error message..." }
+ * }
  */
 
 import * as esbuild from 'esbuild';
@@ -41,8 +42,8 @@ async function main() {
   }
 
   const [baseDir, ...endpointNames] = args;
-  const results = {};
-  const errors = [];
+  const bundledEndpoints = {};
+  const endpointErrors = {};
 
   // Create alias plugin once for all endpoints
   const aliasPlugin = createAliasPlugin(baseDir);
@@ -68,31 +69,44 @@ globalThis.__endpoint = endpoint;
         write: false,
         format: 'esm',
         platform: 'browser',
-        logLevel: 'silent',
+        // Don't suppress errors - capture them for debugging
+        logLevel: 'warning',
         plugins: [aliasPlugin],
       });
 
+      // Capture any warnings from esbuild (treat as errors for visibility)
+      if (result.warnings && result.warnings.length > 0) {
+        const warningMessages = result.warnings.map(w =>
+          `${w.location?.file || 'unknown'}:${w.location?.line || '?'} - ${w.text}`
+        );
+        endpointErrors[name] = `Warnings: ${warningMessages.join('; ')}`;
+      }
+
       if (result.outputFiles && result.outputFiles.length > 0) {
-        results[name] = result.outputFiles[0].text;
+        bundledEndpoints[name] = result.outputFiles[0].text;
       } else {
-        errors.push(`${name}: No output generated`);
+        endpointErrors[name] = 'No output generated';
       }
     } catch (err) {
-      errors.push(`${name}: ${err.message}`);
+      // esbuild throws on errors - format them nicely
+      if (err.errors && Array.isArray(err.errors)) {
+        const errorMessages = err.errors.map(e => {
+          const loc = e.location
+            ? `${e.location.file || 'unknown'}:${e.location.line || '?'}:${e.location.column || '?'}`
+            : 'unknown';
+          return `${loc} - ${e.text}`;
+        });
+        endpointErrors[name] = errorMessages.join('\n');
+      } else {
+        endpointErrors[name] = err.message;
+      }
     }
   }
 
-  // Output results
-  if (errors.length > 0 && Object.keys(results).length === 0) {
-    // All failed
-    console.log(JSON.stringify({ error: errors.join('; ') }));
-    process.exit(1);
-  }
-
-  // Return results (partial success is ok - some endpoints might not exist yet)
+  // Always return results - endpointErrors will contain any failures per-endpoint
   console.log(JSON.stringify({
-    bundledEndpoints: results,
-    ...(errors.length > 0 ? { warnings: errors } : {}),
+    bundledEndpoints,
+    endpointErrors: Object.keys(endpointErrors).length > 0 ? endpointErrors : undefined,
   }));
 }
 
