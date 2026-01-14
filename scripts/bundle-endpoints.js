@@ -27,7 +27,7 @@ function createAliasPlugin(baseDir) {
         path: path.resolve(baseDir, 'src/__zite__/integrations.ts'),
       }));
 
-      // Rewrite 'zod' imports to '__zod__.js' which cloudflare-lambda provides
+      // Rewrite 'zod' imports to './__zod__.js' which cloudflare-lambda provides
       build.onResolve({ filter: /^zod$/ }, () => ({
         path: './__zod__.js',
         external: true,
