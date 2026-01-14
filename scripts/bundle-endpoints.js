@@ -69,6 +69,10 @@ globalThis.__endpoint = endpoint;
         write: false,
         format: 'esm',
         platform: 'browser',
+        // Externalize zod - it's provided as a shared module by cloudflare-lambda
+        // This significantly reduces bundle size (~50KB savings per endpoint)
+        // TODO: Investigate externalizing integrations SDK similarly (createEndpoint, ZiteError, etc.)
+        external: ['zod'],
         // Don't suppress errors - capture them for debugging
         logLevel: 'warning',
         plugins: [aliasPlugin],
