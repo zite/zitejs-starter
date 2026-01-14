@@ -14,10 +14,9 @@ import * as esbuild from 'esbuild';
 import * as path from 'path';
 
 /**
- * Create an esbuild plugin that resolves SDK aliases
+ * Create an esbuild plugin that resolves SDK aliases and rewrites zod imports
  * Maps 'zite-integrations-backend-sdk' -> './__zite__/integrations.ts'
- * This is needed because endpoint files use aliased imports but esbuild
- * doesn't read tsconfig paths by default.
+ * Maps 'zod' -> '__zod_external__' (resolved by cloudflare-lambda Worker Loader)
  */
 function createAliasPlugin(baseDir) {
   return {
@@ -26,6 +25,12 @@ function createAliasPlugin(baseDir) {
       // Handle zite-integrations-backend-sdk alias
       build.onResolve({ filter: /^zite-integrations-backend-sdk$/ }, () => ({
         path: path.resolve(baseDir, 'src/__zite__/integrations.ts'),
+      }));
+
+      // Rewrite 'zod' imports to '__zod__.js' which cloudflare-lambda provides
+      build.onResolve({ filter: /^zod$/ }, () => ({
+        path: './__zod__.js',
+        external: true,
       }));
     },
   };
@@ -69,10 +74,8 @@ globalThis.__endpoint = endpoint;
         write: false,
         format: 'esm',
         platform: 'browser',
-        // Externalize zod - it's provided as a shared module by cloudflare-lambda
-        // This significantly reduces bundle size (~50KB savings per endpoint)
-        // TODO: Investigate externalizing integrations SDK similarly (createEndpoint, ZiteError, etc.)
-        external: ['zod'],
+        // Note: zod is externalized via the alias plugin (rewrites to './__zod__.js')
+        // cloudflare-lambda provides './__zod__.js' as a Worker Loader module
         // Don't suppress errors - capture them for debugging
         logLevel: 'warning',
         plugins: [aliasPlugin],
