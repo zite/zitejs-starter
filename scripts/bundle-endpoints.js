@@ -14,9 +14,10 @@ import * as esbuild from 'esbuild';
 import * as path from 'path';
 
 /**
- * Create an esbuild plugin that resolves SDK aliases and rewrites zod imports
+ * Create an esbuild plugin that resolves SDK aliases and rewrites external imports
  * Maps 'zite-integrations-backend-sdk' -> './__zite__/integrations.ts'
- * Maps 'zod' -> '__zod_external__' (resolved by cloudflare-lambda Worker Loader)
+ * Maps 'zod' -> './__zod__.js' (provided by cloudflare-lambda Worker Loader)
+ * Maps '__zite_*__' -> './__zite_*__.js' (provided by cloudflare-lambda Worker Loader)
  */
 function createAliasPlugin(baseDir) {
   return {
@@ -30,6 +31,13 @@ function createAliasPlugin(baseDir) {
       // Rewrite 'zod' imports to './__zod__.js' which cloudflare-lambda provides
       build.onResolve({ filter: /^zod$/ }, () => ({
         path: './__zod__.js',
+        external: true,
+      }));
+
+      // Rewrite '__zite_*__' imports to './__zite_*__.js' which cloudflare-lambda provides
+      // This handles all externalized modules: runtime, slack, openai, databases, etc.
+      build.onResolve({ filter: /^__zite_\w+__$/ }, (args) => ({
+        path: `./${args.path}.js`,
         external: true,
       }));
     },
