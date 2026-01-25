@@ -34,6 +34,7 @@ export function streamZiteEndpoint<T>({
   appPublicIdentifier,
   inputs,
   workflowId,
+  mode,
 }: {
   appPublicIdentifier: string;
   inputs: Record<string, unknown>;
@@ -50,11 +51,7 @@ export function streamZiteEndpoint<T>({
       ? "https://lambda.zitestaging.com"
       : "https://lambda.zite.com";
 
-  const host = window.location.host;
-  const mode =
-    host.endsWith(".zite-dev-sandbox.com") || host.endsWith(".zite-sandbox.com")
-      ? "preview"
-      : "live";
+  // mode comes from SDK (baked in at build time as 'preview' or 'live')
 
   const urlParams = new URLSearchParams(window.location.search);
   const usageToken = window._ziteUsageToken || urlParams.get("usageToken");
@@ -187,6 +184,7 @@ export const requestZiteEndpoint = async ({
   appPublicIdentifier,
   inputs,
   workflowId,
+  mode,
   stream,
 }: {
   appPublicIdentifier: string;
@@ -205,11 +203,7 @@ export const requestZiteEndpoint = async ({
       ? "https://lambda.zitestaging.com"
       : "https://lambda.zite.com";
 
-  const host = window.location.host;
-  const mode =
-    host.endsWith(".zite-dev-sandbox.com") || host.endsWith(".zite-sandbox.com")
-      ? "preview"
-      : "live";
+  // mode comes from SDK (baked in at build time as 'preview' or 'live')
 
   // ?usageToken=xxx
   const urlParams = new URLSearchParams(window.location.search);
