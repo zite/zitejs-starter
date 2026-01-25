@@ -40,14 +40,15 @@ export function streamZiteEndpoint<T>({
   mode: "live" | "preview";
   workflowId: string;
 }): StreamingResponse<T> {
+  // V2 Architecture: Frontend calls Lambda directly
+  // Lambda handles validation, context fetching, and execution
+  // For deprecated workflows (no bundled endpoints), Lambda forwards to workflow-runner
   // @ts-ignore isLocalDev set by sdk.ts
-  const SERVER_URL = window.isLocalDev
-    ? "http://localhost:2506"
+  const LAMBDA_URL = window.isLocalDev
+    ? "http://localhost:8787" // wrangler dev
     : window.isStaging
-      ? "https://staging-workflows.fillout.co"
-      : window.isProduction
-        ? "https://workflows.fillout.com"
-        : "https://server.zite.com";
+      ? "https://lambda.zitestaging.com"
+      : "https://lambda.zite.com";
 
   const host = window.location.host;
   const mode =
@@ -67,18 +68,19 @@ export function streamZiteEndpoint<T>({
     resultReject = reject;
   });
 
-  // Start the fetch immediately
+  // Start the fetch immediately - V2 format
   const fetchPromise = fetch(
-    `${SERVER_URL}/public/${appPublicIdentifier}/workflow/execute`,
+    `${LAMBDA_URL}/v2/execute`,
     {
       credentials: "include",
       body: JSON.stringify({
+        flowPublicId: appPublicIdentifier,
+        workflowId,
         inputs,
         mode,
-        workflowId,
         usageToken,
-        stream: true,
         ziteAuthToken,
+        stream: true,
       }),
       method: "POST",
       headers: {
@@ -193,16 +195,15 @@ export const requestZiteEndpoint = async ({
   workflowId: string;
   stream?: boolean;
 }): Promise<any> => {
+  // V2 Architecture: Frontend calls Lambda directly
+  // Lambda handles validation, context fetching, and execution
+  // For deprecated workflows (no bundled endpoints), Lambda forwards to workflow-runner
   // @ts-ignore isLocalDev set by sdk.ts
-  const SERVER_URL = window.isLocalDev
-    ? "http://localhost:2506"
+  const LAMBDA_URL = window.isLocalDev
+    ? "http://localhost:8787" // wrangler dev
     : window.isStaging
-    ? "https://staging-workflows.fillout.co"
-    : window.isProduction
-    ? "https://workflows.fillout.com"
-    : // antony TODO eventually we can phase this out and
-      // point everyone to workflows.fillout.com
-      "https://server.zite.com";
+      ? "https://lambda.zitestaging.com"
+      : "https://lambda.zite.com";
 
   const host = window.location.host;
   const mode =
@@ -219,17 +220,19 @@ export const requestZiteEndpoint = async ({
   const ziteAuthToken = localStorage.getItem("zite.auth.token");
 
   try {
+    // V2 request format
     const fetchResponse = await fetch(
-      `${SERVER_URL}/public/${appPublicIdentifier}/workflow/execute`,
+      `${LAMBDA_URL}/v2/execute`,
       {
         credentials: "include",
         body: JSON.stringify({
+          flowPublicId: appPublicIdentifier,
+          workflowId,
           inputs,
           mode,
-          workflowId,
           usageToken,
-          stream,
           ziteAuthToken,
+          stream,
         }),
         method: "POST",
         headers: {
