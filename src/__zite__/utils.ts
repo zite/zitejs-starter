@@ -34,7 +34,7 @@ export function streamZiteEndpoint<T>({
   appPublicIdentifier,
   inputs,
   workflowId,
-  mode,
+  mode: _modeFromSdk,
 }: {
   appPublicIdentifier: string;
   inputs: Record<string, unknown>;
@@ -51,10 +51,12 @@ export function streamZiteEndpoint<T>({
       ? "https://lambda.zitestaging.com"
       : "https://lambda.zite.com";
 
-  // mode comes from SDK (baked in at build time as 'preview' or 'live')
-
+  // Determine mode at runtime based on usage token presence
+  // Usage token is present when running in editor preview mode
+  // If no usage token, we're running the live published app
   const urlParams = new URLSearchParams(window.location.search);
   const usageToken = window._ziteUsageToken || urlParams.get("usageToken");
+  const mode = usageToken ? "preview" : "live";
   const ziteAuthToken = localStorage.getItem("zite.auth.token");
 
   // Create result promise that will be resolved when we receive the 'result' SSE event
@@ -184,7 +186,7 @@ export const requestZiteEndpoint = async ({
   appPublicIdentifier,
   inputs,
   workflowId,
-  mode,
+  mode: _modeFromSdk,
   stream,
 }: {
   appPublicIdentifier: string;
@@ -203,11 +205,12 @@ export const requestZiteEndpoint = async ({
       ? "https://lambda.zitestaging.com"
       : "https://lambda.zite.com";
 
-  // mode comes from SDK (baked in at build time as 'preview' or 'live')
-
-  // ?usageToken=xxx
+  // Determine mode at runtime based on usage token presence
+  // Usage token is present when running in editor preview mode
+  // If no usage token, we're running the live published app
   const urlParams = new URLSearchParams(window.location.search);
   const usageToken = window._ziteUsageToken || urlParams.get("usageToken");
+  const mode = usageToken ? "preview" : "live";
   const controller = new AbortController();
   const signal = controller.signal;
 
