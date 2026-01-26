@@ -38,14 +38,17 @@ export type StreamingResponse<T> = {
 function getModeFromHostname(): "live" | "preview" {
   const host = window.location.host;
 
+  // Editor preview domains (zite-editor-* prefix)
+  // Staging: zite-editor-*.zitestaging.com
+  // Production: zite-editor-*.zite.com
+  // Local: zite-editor-*.localhost:*
+  if (host.startsWith("zite-editor-")) return "preview";
+
   // Staging sandbox: *.zite-dev-sandbox.com
   if (host.endsWith(".zite-dev-sandbox.com")) return "preview";
 
   // Production sandbox: *.zite-sandbox.com
   if (host.endsWith(".zite-sandbox.com")) return "preview";
-
-  // Local dev editor: zite-editor-*.localhost:*
-  if (host.startsWith("zite-editor-") && host.includes("localhost")) return "preview";
 
   // Everything else is live (custom domains, *.zite.so, etc.)
   return "live";
