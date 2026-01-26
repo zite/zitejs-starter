@@ -30,6 +30,27 @@ export type StreamingResponse<T> = {
  * - AsyncIterator: yields chunks as they arrive (use `for await...of`)
  * - result: Promise that resolves to the final structured result
  */
+/**
+ * Determine execution mode based on hostname.
+ * - Sandbox domains (editor preview) → 'preview' (fetch latest snapshot)
+ * - Live domains (published app) → 'live' (fetch published snapshot)
+ */
+function getModeFromHostname(): "live" | "preview" {
+  const host = window.location.host;
+
+  // Staging sandbox: *.zite-dev-sandbox.com
+  if (host.endsWith(".zite-dev-sandbox.com")) return "preview";
+
+  // Production sandbox: *.zite-sandbox.com
+  if (host.endsWith(".zite-sandbox.com")) return "preview";
+
+  // Local dev editor: zite-editor-*.localhost:*
+  if (host.startsWith("zite-editor-") && host.includes("localhost")) return "preview";
+
+  // Everything else is live (custom domains, *.zite.so, etc.)
+  return "live";
+}
+
 export function streamZiteEndpoint<T>({
   appPublicIdentifier,
   inputs,
@@ -51,12 +72,11 @@ export function streamZiteEndpoint<T>({
       ? "https://lambda.zitestaging.com"
       : "https://lambda.zite.com";
 
-  // Determine mode at runtime based on usage token presence
-  // Usage token is present when running in editor preview mode
-  // If no usage token, we're running the live published app
+  // Determine mode at runtime based on hostname (SDK mode is baked at build time, can't use it)
+  const mode = getModeFromHostname();
+
   const urlParams = new URLSearchParams(window.location.search);
   const usageToken = window._ziteUsageToken || urlParams.get("usageToken");
-  const mode = usageToken ? "preview" : "live";
   const ziteAuthToken = localStorage.getItem("zite.auth.token");
 
   // Create result promise that will be resolved when we receive the 'result' SSE event
@@ -205,12 +225,12 @@ export const requestZiteEndpoint = async ({
       ? "https://lambda.zitestaging.com"
       : "https://lambda.zite.com";
 
-  // Determine mode at runtime based on usage token presence
-  // Usage token is present when running in editor preview mode
-  // If no usage token, we're running the live published app
+  // Determine mode at runtime based on hostname (SDK mode is baked at build time, can't use it)
+  const mode = getModeFromHostname();
+
+  // ?usageToken=xxx
   const urlParams = new URLSearchParams(window.location.search);
   const usageToken = window._ziteUsageToken || urlParams.get("usageToken");
-  const mode = usageToken ? "preview" : "live";
   const controller = new AbortController();
   const signal = controller.signal;
 
