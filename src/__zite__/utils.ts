@@ -30,53 +30,30 @@ export type StreamingResponse<T> = {
  * - AsyncIterator: yields chunks as they arrive (use `for await...of`)
  * - result: Promise that resolves to the final structured result
  */
-/**
- * Determine execution mode based on hostname.
- * - Sandbox domains (editor preview) → 'preview' (fetch latest snapshot)
- * - Live domains (published app) → 'live' (fetch published snapshot)
- */
-function getModeFromHostname(): "live" | "preview" {
-  const host = window.location.host;
-
-  // Editor preview domains (zite-editor-* prefix)
-  // Staging: zite-editor-*.zitestaging.com
-  // Production: zite-editor-*.zite.com
-  // Local: zite-editor-*.localhost:*
-  if (host.startsWith("zite-editor-")) return "preview";
-
-  // Staging sandbox: *.zite-dev-sandbox.com
-  if (host.endsWith(".zite-dev-sandbox.com")) return "preview";
-
-  // Production sandbox: *.zite-sandbox.com
-  if (host.endsWith(".zite-sandbox.com")) return "preview";
-
-  // Everything else is live (custom domains, *.zite.so, etc.)
-  return "live";
-}
-
 export function streamZiteEndpoint<T>({
   appPublicIdentifier,
   inputs,
   workflowId,
-  mode: _modeFromSdk,
 }: {
   appPublicIdentifier: string;
   inputs: Record<string, unknown>;
   mode: "live" | "preview";
   workflowId: string;
 }): StreamingResponse<T> {
-  // V2 Architecture: Frontend calls Lambda directly
-  // Lambda handles validation, context fetching, and execution
-  // For deprecated workflows (no bundled endpoints), Lambda forwards to workflow-runner
   // @ts-ignore isLocalDev set by sdk.ts
-  const LAMBDA_URL = window.isLocalDev
-    ? "http://localhost:8787" // wrangler dev
+  const SERVER_URL = window.isLocalDev
+    ? "http://localhost:2506"
     : window.isStaging
-      ? "https://lambda.zitestaging.com"
-      : "https://lambda.zite.com";
+      ? "https://staging-workflows.fillout.co"
+      : window.isProduction
+        ? "https://workflows.fillout.com"
+        : "https://server.zite.com";
 
-  // Determine mode at runtime based on hostname (SDK mode is baked at build time, can't use it)
-  const mode = getModeFromHostname();
+  const host = window.location.host;
+  const mode =
+    host.endsWith(".zite-dev-sandbox.com") || host.endsWith(".zite-sandbox.com")
+      ? "preview"
+      : "live";
 
   const urlParams = new URLSearchParams(window.location.search);
   const usageToken = window._ziteUsageToken || urlParams.get("usageToken");
@@ -90,19 +67,18 @@ export function streamZiteEndpoint<T>({
     resultReject = reject;
   });
 
-  // Start the fetch immediately - V2 format
+  // Start the fetch immediately
   const fetchPromise = fetch(
-    `${LAMBDA_URL}/v2/execute`,
+    `${SERVER_URL}/public/${appPublicIdentifier}/workflow/execute`,
     {
       credentials: "include",
       body: JSON.stringify({
-        flowPublicId: appPublicIdentifier,
-        workflowId,
         inputs,
         mode,
+        workflowId,
         usageToken,
-        ziteAuthToken,
         stream: true,
+        ziteAuthToken,
       }),
       method: "POST",
       headers: {
@@ -209,7 +185,6 @@ export const requestZiteEndpoint = async ({
   appPublicIdentifier,
   inputs,
   workflowId,
-  mode: _modeFromSdk,
   stream,
 }: {
   appPublicIdentifier: string;
@@ -218,18 +193,22 @@ export const requestZiteEndpoint = async ({
   workflowId: string;
   stream?: boolean;
 }): Promise<any> => {
-  // V2 Architecture: Frontend calls Lambda directly
-  // Lambda handles validation, context fetching, and execution
-  // For deprecated workflows (no bundled endpoints), Lambda forwards to workflow-runner
   // @ts-ignore isLocalDev set by sdk.ts
-  const LAMBDA_URL = window.isLocalDev
-    ? "http://localhost:8787" // wrangler dev
+  const SERVER_URL = window.isLocalDev
+    ? "http://localhost:2506"
     : window.isStaging
-      ? "https://lambda.zitestaging.com"
-      : "https://lambda.zite.com";
+    ? "https://staging-workflows.fillout.co"
+    : window.isProduction
+    ? "https://workflows.fillout.com"
+    : // antony TODO eventually we can phase this out and
+      // point everyone to workflows.fillout.com
+      "https://server.zite.com";
 
-  // Determine mode at runtime based on hostname (SDK mode is baked at build time, can't use it)
-  const mode = getModeFromHostname();
+  const host = window.location.host;
+  const mode =
+    host.endsWith(".zite-dev-sandbox.com") || host.endsWith(".zite-sandbox.com")
+      ? "preview"
+      : "live";
 
   // ?usageToken=xxx
   const urlParams = new URLSearchParams(window.location.search);
@@ -240,19 +219,17 @@ export const requestZiteEndpoint = async ({
   const ziteAuthToken = localStorage.getItem("zite.auth.token");
 
   try {
-    // V2 request format
     const fetchResponse = await fetch(
-      `${LAMBDA_URL}/v2/execute`,
+      `${SERVER_URL}/public/${appPublicIdentifier}/workflow/execute`,
       {
         credentials: "include",
         body: JSON.stringify({
-          flowPublicId: appPublicIdentifier,
-          workflowId,
           inputs,
           mode,
+          workflowId,
           usageToken,
-          ziteAuthToken,
           stream,
+          ziteAuthToken,
         }),
         method: "POST",
         headers: {

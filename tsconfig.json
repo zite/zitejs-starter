@@ -10,8 +10,7 @@
       "zite-endpoints-sdk": ["./src/__zite__/sdk.ts"],
       "zite-auth-sdk": ["./src/__zite__/auth.ts"],
       "zite-file-upload-sdk": ["./src/__zite__/fileUpload.ts"],
-      "zite-integrations-backend-sdk": ["./src/__zite__/integrations.ts"],
-      "@fillout/zite-lambda-runtime": ["./src/__zite__/runtime.d.ts"]
+      "zite-integrations-backend-sdk": ["./src/__zite__/integrations.ts"]
     }
   }
 }
