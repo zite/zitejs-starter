@@ -14,9 +14,10 @@ import * as esbuild from 'esbuild';
 import * as path from 'path';
 
 /**
- * Create an esbuild plugin that resolves SDK aliases and rewrites zod imports
+ * Create an esbuild plugin that resolves SDK aliases and rewrites external imports
  * Maps 'zite-integrations-backend-sdk' -> './__zite__/integrations.ts'
- * Maps 'zod' -> '__zod_external__' (resolved by cloudflare-lambda Worker Loader)
+ * Maps 'zod' -> './__zod__.js' (resolved at runtime)
+ * Maps '@fillout/zite-lambda-sdk' -> './__zite-lambda-sdk__.js' (pre-installed in E2B sandbox)
  */
 function createAliasPlugin(baseDir) {
   return {
@@ -30,6 +31,13 @@ function createAliasPlugin(baseDir) {
       // Rewrite 'zod' imports to './__zod__.js' which cloudflare-lambda provides
       build.onResolve({ filter: /^zod$/ }, () => ({
         path: './__zod__.js',
+        external: true,
+      }));
+
+      // Rewrite '@fillout/zite-lambda-sdk' imports - externalized for E2B execution
+      // The shim file re-exports from the actual package which is pre-installed in E2B
+      build.onResolve({ filter: /^@fillout\/zite-lambda-sdk$/ }, () => ({
+        path: './__zite-lambda-sdk__.js',
         external: true,
       }));
     },
