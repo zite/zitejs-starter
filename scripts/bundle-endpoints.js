@@ -8,15 +8,45 @@
  *   "bundledEndpoints": { "getUsers": "bundled code...", "createUser": "bundled code..." },
  *   "endpointErrors": { "brokenEndpoint": "Error message..." }
  * }
+ *
+ * Pre-bundled libraries:
+ * The following libraries are externalized and provided by cloudflare-lambda as
+ * Worker Loader modules. They are lazily loaded on demand to minimize cold starts:
+ * - zod, openai, @anthropic-ai/sdk, stripe, airtable, @notionhq/client
+ * - @slack/web-api, googleapis, @mailchimp/mailchimp_marketing
+ * - @hubspot/api-client, @linear/sdk, @microsoft/microsoft-graph-client
+ *
+ * Endpoint code can import these directly (e.g., `import OpenAI from 'openai'`)
+ * and they will be resolved at runtime from the pre-bundled modules.
  */
 
 import * as esbuild from 'esbuild';
 import * as path from 'path';
 
 /**
+ * Pre-bundled libraries provided by cloudflare-lambda as Worker Loader modules
+ * These are lazily loaded on demand to minimize cold starts
+ * Maps npm package names to the module filenames in cloudflare-lambda
+ */
+const PREBUNDLED_LIBS = {
+  'zod': '__zod__.js',
+  'openai': '__openai__.js',
+  '@anthropic-ai/sdk': '__anthropic__.js',
+  'stripe': '__stripe__.js',
+  'airtable': '__airtable__.js',
+  '@notionhq/client': '__notion__.js',
+  '@slack/web-api': '__slack__.js',
+  'googleapis': '__googleapis__.js',
+  '@mailchimp/mailchimp_marketing': '__mailchimp__.js',
+  '@hubspot/api-client': '__hubspot__.js',
+  '@linear/sdk': '__linear__.js',
+  '@microsoft/microsoft-graph-client': '__microsoft-graph__.js',
+};
+
+/**
  * Create an esbuild plugin that resolves SDK aliases and rewrites external imports
  * Maps 'zite-integrations-backend-sdk' -> './__zite__/integrations.ts'
- * Maps 'zod' -> './__zod__.js' (resolved at runtime)
+ * Maps pre-bundled libs to their Worker Loader module paths (e.g., 'zod' -> './__zod__.js')
  * Maps '@fillout/zite-lambda-sdk' -> './__zite-lambda-sdk__.js' (pre-installed in E2B sandbox)
  */
 function createAliasPlugin(baseDir) {
@@ -28,11 +58,17 @@ function createAliasPlugin(baseDir) {
         path: path.resolve(baseDir, 'src/__zite__/integrations.ts'),
       }));
 
-      // Rewrite 'zod' imports to './__zod__.js' which cloudflare-lambda provides
-      build.onResolve({ filter: /^zod$/ }, () => ({
-        path: './__zod__.js',
-        external: true,
-      }));
+      // Rewrite pre-bundled library imports to Worker Loader module paths
+      // cloudflare-lambda provides these as modules (e.g., '__zod__.js', '__openai__.js')
+      for (const [pkgName, modulePath] of Object.entries(PREBUNDLED_LIBS)) {
+        // Escape special regex characters in package names (e.g., @, /)
+        const escapedName = pkgName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const filter = new RegExp(`^${escapedName}$`);
+        build.onResolve({ filter }, () => ({
+          path: `./${modulePath}`,
+          external: true,
+        }));
+      }
 
       // Rewrite '@fillout/zite-lambda-sdk' imports - externalized for E2B execution
       // The shim file re-exports from the actual package which is pre-installed in E2B
