@@ -24,6 +24,18 @@ import * as esbuild from 'esbuild';
 import * as path from 'path';
 
 /**
+ * Node.js built-ins to externalize (CF Workers provides these via nodejs_compat)
+ */
+const NODE_BUILTINS = [
+  'http', 'https', 'http2', 'stream', 'buffer', 'util', 'events', 'crypto',
+  'path', 'fs', 'url', 'querystring', 'zlib', 'net', 'tls', 'os',
+  'assert', 'process', 'child_process', 'cluster', 'dgram', 'dns',
+  'inspector', 'module', 'perf_hooks', 'readline', 'repl',
+  'string_decoder', 'timers', 'tty', 'v8', 'vm', 'worker_threads',
+  'async_hooks', 'trace_events', 'punycode',
+];
+
+/**
  * Pre-bundled libraries provided by cloudflare-lambda as Worker Loader modules
  * These are lazily loaded on demand to minimize cold starts
  * Maps npm package names to the module filenames in cloudflare-lambda
@@ -121,9 +133,13 @@ globalThis.__endpoint = endpoint;
         bundle: true,
         write: false,
         format: 'esm',
-        platform: 'browser',
-        // Note: zod is externalized via the alias plugin (rewrites to './__zod__.js')
-        // cloudflare-lambda provides './__zod__.js' as a Worker Loader module
+        platform: 'neutral',
+        target: 'es2022',
+        // Externalize Node.js built-ins (CF Workers provides these via nodejs_compat)
+        external: NODE_BUILTINS,
+        // Prefer ESM exports when available
+        mainFields: ['module', 'main'],
+        conditions: ['worker', 'browser', 'import', 'default'],
         // Don't suppress errors - capture them for debugging
         logLevel: 'warning',
         plugins: [aliasPlugin],
