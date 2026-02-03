@@ -29,7 +29,11 @@ import * as path from 'path';
  * Maps npm package names to the module filenames in cloudflare-lambda
  */
 const PREBUNDLED_LIBS = {
+  // Zite runtime - always loaded (log collector, helpers, ZiteError, createEndpoint)
+  '@zite/endpoints-runtime-sdk': '__zite-runtime__.js',
+  // Zod - always loaded (small, commonly used for validation)
   'zod': '__zod__.js',
+  // SDK libraries - lazily loaded based on app's integrations
   'openai': '__openai__.js',
   '@anthropic-ai/sdk': '__anthropic__.js',
   'stripe': '__stripe__.js',
