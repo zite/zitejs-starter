@@ -33,6 +33,6 @@
     "noUncheckedSideEffectImports": true,
     "strictNullChecks": true
   },
-  "include": ["src"],
+  "include": ["src", ".zite"],
   "exclude": ["node_modules", "dist"]
 }

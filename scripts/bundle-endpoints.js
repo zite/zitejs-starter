@@ -86,12 +86,6 @@ function createAliasPlugin(baseDir) {
         }));
       }
 
-      // Rewrite '@fillout/zite-lambda-sdk' imports - externalized for E2B execution
-      // The shim file re-exports from the actual package which is pre-installed in E2B
-      build.onResolve({ filter: /^@fillout\/zite-lambda-sdk$/ }, () => ({
-        path: './__zite-lambda-sdk__.js',
-        external: true,
-      }));
     },
   };
 }
