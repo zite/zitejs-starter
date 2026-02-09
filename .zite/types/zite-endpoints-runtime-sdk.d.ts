@@ -83,10 +83,19 @@ declare module '@zite/endpoints-runtime-sdk' {
   /**
    * Structured error class for endpoint errors.
    * Throw this to return specific HTTP status codes to the client.
+   *
+   * Preferred usage (object style):
+   *   throw new ZiteError({ code: 'NOT_FOUND', message: 'User not found' });
+   *
+   * Legacy usage (positional args, for backwards compatibility):
+   *   throw new ZiteError('User not found', 'NOT_FOUND');
    */
   export class ZiteError extends Error {
     code: ZiteErrorCode;
-    constructor(params: { code: ZiteErrorCode; message: string });
+    /** Preferred: Create with an options object */
+    constructor(options: { code: ZiteErrorCode; message: string });
+    /** Legacy: Create with positional arguments (for backwards compatibility) */
+    constructor(message: string, code?: ZiteErrorCode);
   }
 
   // =============================================================================
