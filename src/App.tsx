@@ -1,3 +1,6 @@
+import { MarkdownEditorSamples } from "@/components/markdown-editor/MarkdownEditor.samples"
+
 export default function App() {
-  return <div />;
+  // Note: This is just for easier reviewing, and I'll remove this change before merging!
+  return <MarkdownEditorSamples />;
 }

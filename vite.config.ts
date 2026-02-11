@@ -12,7 +12,9 @@ const pkg = JSON.parse(
   readFileSync(new URL("./package.json", import.meta.url), "utf8")
 );
 
-const pkgDeps = Object.keys(pkg.dependencies);
+const pkgDeps = Object.keys(pkg.dependencies)
+  // Need to exclude @tiptap/pm from optimization, since it doesn't have a top level entry point
+  .filter(dep => dep !== '@tiptap/pm');
 
 /**
  * Vite's main focus is on startup speed, so it doesn't check your package.json to see which dependencies you have at startup.
