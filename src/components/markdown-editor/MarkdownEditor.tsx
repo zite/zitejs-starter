@@ -25,22 +25,47 @@ import { Toggle } from "@/components/ui/toggle"
 import { Separator } from "@/components/ui/separator"
 
 export interface MarkdownEditorProps {
+  /** Initial markdown content to populate the editor with. */
   content?: string
+  /** Callback fired on every change, receiving the current markdown string. */
   onChange?: (markdown: string) => void
+  /** Additional class names applied to the outer wrapper element. */
   className?: string
+  /** Additional class names applied to the editor content area. */
   editorClassName?: string
+  /**
+   * Whether the editor content is editable. When `false`, the toolbar is hidden.
+   * @default true
+   */
   editable?: boolean
+  /** Hide the bold button from the toolbar. */
   hideBold?: boolean
+  /** Hide the italic button from the toolbar. */
   hideItalic?: boolean
+  /** Hide the strikethrough button from the toolbar. */
   hideStrikethrough?: boolean
+  /** Hide the inline code button from the toolbar. */
   hideCode?: boolean
+  /** Hide the highlight button from the toolbar. */
   hideHighlight?: boolean
+  /** Hide the heading buttons (H1, H2, H3) from the toolbar. */
   hideHeadings?: boolean
+  /** Hide the bullet list button from the toolbar. */
   hideBulletList?: boolean
+  /** Hide the ordered list button from the toolbar. */
   hideOrderedList?: boolean
+  /** Hide the blockquote button from the toolbar. */
   hideBlockquote?: boolean
+  /** Hide the horizontal rule button from the toolbar. */
   hideHorizontalRule?: boolean
+  /** Hide the undo/redo buttons from the toolbar. */
   hideUndoRedo?: boolean
+  /**
+   * Controls the editor height. Fixed values (`sm`, `md`, `lg`) set a fixed height.
+   * Dynamic values (`dynamic-sm`, `dynamic-md`, `dynamic-lg`) set a minimum height
+   * that grows with content.
+   * @default "dynamic-md"
+   */
   height?: "sm" | "md" | "lg" | "dynamic-sm" | "dynamic-md" | "dynamic-lg"
 }
 
