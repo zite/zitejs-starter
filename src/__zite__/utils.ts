@@ -84,7 +84,7 @@ export function streamZiteEndpoint<T>({
       headers: {
         "content-type": "application/json;charset=UTF-8",
       },
-    }
+    },
   );
 
   return {
@@ -95,7 +95,8 @@ export function streamZiteEndpoint<T>({
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           const error = new Error(
-            errorData.message || `Error with endpoint ${workflowId}: ${response.status}`
+            errorData.message ||
+              `Error with endpoint ${workflowId}: ${response.status}`,
           );
           resultReject(error);
           throw error;
@@ -107,7 +108,9 @@ export function streamZiteEndpoint<T>({
           throw error;
         }
 
-        const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+        const reader = response.body
+          .pipeThrough(new TextDecoderStream())
+          .getReader();
         let buffer = "";
 
         while (true) {
@@ -163,7 +166,8 @@ export function streamZiteEndpoint<T>({
           return;
         }
 
-        const errorMessage = err.message || `Unknown error with endpoint ${workflowId}`;
+        const errorMessage =
+          err.message || `Unknown error with endpoint ${workflowId}`;
         console.error(errorMessage);
 
         if (mode === "live") {
@@ -197,16 +201,18 @@ export const requestZiteEndpoint = async ({
   const SERVER_URL = window.isLocalDev
     ? "http://localhost:2506"
     : window.isStaging
-    ? "https://staging-workflows.fillout.co"
-    : window.isProduction
-    ? "https://workflows.fillout.com"
-    : // antony TODO eventually we can phase this out and
-      // point everyone to workflows.fillout.com
-      "https://server.zite.com";
+      ? "https://staging-workflows.fillout.co"
+      : window.isProduction
+        ? "https://workflows.fillout.com"
+        : // antony TODO eventually we can phase this out and
+          // point everyone to workflows.fillout.com
+          "https://server.zite.com";
 
   const host = window.location.host;
   const mode =
-    host.endsWith(".zite-dev-sandbox.com") || host.endsWith(".zite-sandbox.com")
+    host.startsWith("zite-editor") ||
+    host.endsWith(".zite-dev-sandbox.com") ||
+    host.endsWith(".zite-sandbox.com")
       ? "preview"
       : "live";
 
@@ -236,14 +242,14 @@ export const requestZiteEndpoint = async ({
           "content-type": "application/json;charset=UTF-8",
         },
         signal,
-      }
+      },
     );
 
     if (!fetchResponse.ok) {
       const errorData = await fetchResponse.json();
       throw new Error(
         `Error with endpoint ${workflowId}: ${errorData.message}` ||
-          `Error with endpoint ${workflowId} status: ${fetchResponse.status}`
+          `Error with endpoint ${workflowId} status: ${fetchResponse.status}`,
       );
     }
 

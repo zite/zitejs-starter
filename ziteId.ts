@@ -6,6 +6,32 @@ import { walk } from "estree-walker";
 
 const validExtensions = new Set([".jsx", ".tsx"]);
 
+/**
+ * Extracts the component name from a JSX element name AST node.
+ * Handles JSXIdentifier (Card, div) and JSXMemberExpression (motion.div, Icons.Home)
+ */
+function getComponentName(elementName: any): string | null {
+  if (elementName.type === "JSXIdentifier") {
+    return elementName.name;
+  }
+  if (elementName.type === "JSXMemberExpression") {
+    // Recursively build: motion.div, Icons.Home, Dropdown.Menu.Item
+    const object = getComponentName(elementName.object);
+    const property = elementName.property.name;
+    return object ? `${object}.${property}` : property;
+  }
+  return null;
+}
+
+/**
+ * Checks if a component name is a native HTML element.
+ * Native elements start with lowercase (div, span, button).
+ * Components start with uppercase (Card, Button) or are member expressions (motion.div).
+ */
+function isNativeElement(name: string): boolean {
+  return /^[a-z]/.test(name) && !name.includes(".");
+}
+
 export function ziteId(): Plugin {
   const cwd = process.cwd();
   return {
@@ -57,6 +83,12 @@ export function ziteId(): Plugin {
               const dataComponentId = `${relativePath}|${line}|${col}`;
 
               let attributes = ` data-zite-id="${dataComponentId}"`;
+
+              // Add component name for non-native elements
+              const componentName = getComponentName(openingElement.name);
+              if (componentName && !isNativeElement(componentName)) {
+                attributes += ` data-zite-component="${componentName}"`;
+              }
 
               // Check if the component has simple children
               if (

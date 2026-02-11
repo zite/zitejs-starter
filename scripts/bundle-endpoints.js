@@ -8,15 +8,62 @@
  *   "bundledEndpoints": { "getUsers": "bundled code...", "createUser": "bundled code..." },
  *   "endpointErrors": { "brokenEndpoint": "Error message..." }
  * }
+ *
+ * Pre-bundled libraries:
+ * The following libraries are externalized and provided by cloudflare-lambda as
+ * Worker Loader modules. They are lazily loaded on demand to minimize cold starts:
+ * - zod, openai, @anthropic-ai/sdk, stripe, airtable, @notionhq/client
+ * - @slack/web-api, googleapis, @mailchimp/mailchimp_marketing
+ * - @hubspot/api-client, @linear/sdk, @microsoft/microsoft-graph-client
+ *
+ * Endpoint code can import these directly (e.g., `import OpenAI from 'openai'`)
+ * and they will be resolved at runtime from the pre-bundled modules.
  */
 
 import * as esbuild from 'esbuild';
 import * as path from 'path';
 
 /**
- * Create an esbuild plugin that resolves SDK aliases and rewrites zod imports
+ * Node.js built-ins to externalize (CF Workers provides these via nodejs_compat)
+ */
+const NODE_BUILTINS = [
+  'http', 'https', 'http2', 'stream', 'buffer', 'util', 'events', 'crypto',
+  'path', 'fs', 'url', 'querystring', 'zlib', 'net', 'tls', 'os',
+  'assert', 'process', 'child_process', 'cluster', 'dgram', 'dns',
+  'inspector', 'module', 'perf_hooks', 'readline', 'repl',
+  'string_decoder', 'timers', 'tty', 'v8', 'vm', 'worker_threads',
+  'async_hooks', 'trace_events', 'punycode',
+];
+
+/**
+ * Pre-bundled libraries provided by cloudflare-lambda as Worker Loader modules
+ * These are lazily loaded on demand to minimize cold starts
+ * Maps npm package names to the module filenames in cloudflare-lambda
+ */
+const PREBUNDLED_LIBS = {
+  // Zite runtime - always loaded (log collector, helpers, ZiteError, createEndpoint)
+  '@zite/endpoints-runtime-sdk': '__zite-runtime__.js',
+  // Zod - always loaded (small, commonly used for validation)
+  'zod': '__zod__.js',
+  // SDK libraries - lazily loaded based on app's integrations
+  'openai': '__openai__.js',
+  '@anthropic-ai/sdk': '__anthropic__.js',
+  'stripe': '__stripe__.js',
+  'airtable': '__airtable__.js',
+  '@notionhq/client': '__notion__.js',
+  '@slack/web-api': '__slack__.js',
+  'googleapis': '__googleapis__.js',
+  '@mailchimp/mailchimp_marketing': '__mailchimp__.js',
+  '@hubspot/api-client': '__hubspot__.js',
+  '@linear/sdk': '__linear__.js',
+  '@microsoft/microsoft-graph-client': '__microsoft-graph__.js',
+};
+
+/**
+ * Create an esbuild plugin that resolves SDK aliases and rewrites external imports
  * Maps 'zite-integrations-backend-sdk' -> './__zite__/integrations.ts'
- * Maps 'zod' -> '__zod_external__' (resolved by cloudflare-lambda Worker Loader)
+ * Maps pre-bundled libs to their Worker Loader module paths (e.g., 'zod' -> './__zod__.js')
+ * Maps '@fillout/zite-lambda-sdk' -> './__zite-lambda-sdk__.js' (pre-installed in E2B sandbox)
  */
 function createAliasPlugin(baseDir) {
   return {
@@ -27,11 +74,18 @@ function createAliasPlugin(baseDir) {
         path: path.resolve(baseDir, 'src/__zite__/integrations.ts'),
       }));
 
-      // Rewrite 'zod' imports to './__zod__.js' which cloudflare-lambda provides
-      build.onResolve({ filter: /^zod$/ }, () => ({
-        path: './__zod__.js',
-        external: true,
-      }));
+      // Rewrite pre-bundled library imports to Worker Loader module paths
+      // cloudflare-lambda provides these as modules (e.g., '__zod__.js', '__openai__.js')
+      for (const [pkgName, modulePath] of Object.entries(PREBUNDLED_LIBS)) {
+        // Escape special regex characters in package names (e.g., @, /)
+        const escapedName = pkgName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const filter = new RegExp(`^${escapedName}$`);
+        build.onResolve({ filter }, () => ({
+          path: `./${modulePath}`,
+          external: true,
+        }));
+      }
+
     },
   };
 }
@@ -73,9 +127,13 @@ globalThis.__endpoint = endpoint;
         bundle: true,
         write: false,
         format: 'esm',
-        platform: 'browser',
-        // Note: zod is externalized via the alias plugin (rewrites to './__zod__.js')
-        // cloudflare-lambda provides './__zod__.js' as a Worker Loader module
+        platform: 'neutral',
+        target: 'es2022',
+        // Externalize Node.js built-ins (CF Workers provides these via nodejs_compat)
+        external: NODE_BUILTINS,
+        // Prefer ESM exports when available
+        mainFields: ['module', 'main'],
+        conditions: ['worker', 'browser', 'import', 'default'],
         // Don't suppress errors - capture them for debugging
         logLevel: 'warning',
         plugins: [aliasPlugin],
