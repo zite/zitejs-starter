@@ -118,7 +118,7 @@ function ToolbarButton({
   )
 }
 
-export function MarkdownEditor({
+export default function MarkdownEditor({
   content = "",
   onChange,
   className,

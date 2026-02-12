@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Moon, Sun } from "lucide-react"
-import { MarkdownEditor, type MarkdownEditorProps } from "./MarkdownEditor"
+import { MarkdownEditor, type MarkdownEditorProps } from "./index.tsx"
 
 const sampleContent = `## Welcome to the Editor
 
