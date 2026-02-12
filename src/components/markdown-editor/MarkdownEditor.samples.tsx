@@ -118,7 +118,7 @@ export function MarkdownEditorSamples() {
         <p className="mb-3 text-sm text-muted-foreground">
           Editor initialized with sample content.
         </p>
-        <MarkdownEditor content={sampleContent} />
+        <MarkdownEditor height="dynamic-sm" content={sampleContent} />
       </div>
 
       <div>

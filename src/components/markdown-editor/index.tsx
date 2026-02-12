@@ -32,7 +32,7 @@ export function MarkdownEditor(
   return (
     <Suspense
       fallback={
-        <Skeleton className={cn("w-full rounded-md", heightClasses[height])} />
+        <Skeleton className={cn("w-full rounded-md py-4 box-content", heightClasses[height])} />
       }
     >
       <LazyMarkdownEditor {...props} />
