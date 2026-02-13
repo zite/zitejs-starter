@@ -41,6 +41,7 @@ export default defineConfig({
   server: {
     host: "::",
     port: 8080,
+    cors: true,
     hmr: {
       overlay: false,
     },
