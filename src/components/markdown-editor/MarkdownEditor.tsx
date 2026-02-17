@@ -24,6 +24,8 @@ import { cn } from "@/lib/utils"
 import { Toggle } from "@/components/ui/toggle"
 import { Separator } from "@/components/ui/separator"
 
+import './markdown-editor.css';
+
 export interface MarkdownEditorProps {
   /** Initial markdown content to populate the editor with. */
   content?: string
@@ -159,7 +161,7 @@ export function MarkdownEditor({
   return (
     <div
       className={cn(
-        "rounded-md border border-input bg-background",
+        "rounded-md border border-input bg-transparent shadow-sm focus-within:ring-1 focus-visible:outline-none focus-within:ring-ring",
         className
       )}
     >
@@ -338,11 +340,10 @@ export function MarkdownEditor({
           </div>
         )
       })()}
-
       <EditorContent
         editor={editor}
         className={cn(
-          "flex flex-col [&_.tiptap]:flex-1 prose prose-sm dark:prose-invert max-w-none p-4 overflow-y-auto focus-within:outline-none [&_.tiptap]:outline-none [&_.tiptap>:first-child]:mt-0 [&_blockquote_p:first-of-type]:before:content-none [&_blockquote_p:last-of-type]:after:content-none [&_li_p]:!my-0.5",
+          "flex flex-col [&_.tiptap]:flex-1 text-base prose prose-sm dark:prose-invert max-w-none p-4 overflow-y-auto focus-within:outline-none [&_.tiptap]:outline-none [&_.tiptap>:first-child]:mt-0 [&_blockquote_p:first-of-type]:before:content-none [&_blockquote_p:last-of-type]:after:content-none [&_li_p]:!my-0.5 [&_code]:before:content-none [&_code]:after:content-none",
           { "h-32": height === "sm", "h-64": height === "md", "h-96": height === "lg" },
           { "min-h-32": height === "dynamic-sm", "min-h-64": height === "dynamic-md", "min-h-96": height === "dynamic-lg" },
           editorClassName,
