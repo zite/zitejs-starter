@@ -34,7 +34,7 @@ function isNativeElement(name: string): boolean {
 }
 
 function isStarterFile(fileName: string): boolean {
-  const relative = path.relative(path.join(__dirname, "src"), fileName);
+  const relative = path.relative(__dirname, fileName);
   return starterFiles.includes(relative);
 }
 
@@ -44,7 +44,6 @@ export function ziteId(): Plugin {
     name: "vite-plugin-zite-id",
     enforce: "pre",
     async transform(code, id) {
-      console.log(id);
       if (
         !validExtensions.has(path.extname(id)) ||
         id.includes("node_modules") ||

@@ -17,7 +17,7 @@ async function listFiles(dir) {
         files.push(...(await listFiles(full)));
       }
     } else {
-      const rel = relative(SRC, full);
+      const rel = relative(ROOT, full);
       if (!EXCLUDE_FILES.includes(rel) && !entry.name.endsWith(".d.ts")) {
         files.push(rel);
       }
