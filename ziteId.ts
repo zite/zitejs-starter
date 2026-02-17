@@ -3,6 +3,7 @@ import MagicString from "magic-string";
 import path from "path";
 import { Plugin } from "vite";
 import { walk } from "estree-walker";
+import starterFiles from "./starter-files.json";
 
 const validExtensions = new Set([".jsx", ".tsx"]);
 
@@ -32,15 +33,22 @@ function isNativeElement(name: string): boolean {
   return /^[a-z]/.test(name) && !name.includes(".");
 }
 
+function isStarterFile(fileName: string): boolean {
+  const relative = path.relative(path.join(__dirname, "src"), fileName);
+  return starterFiles.includes(relative);
+}
+
 export function ziteId(): Plugin {
   const cwd = process.cwd();
   return {
     name: "vite-plugin-zite-id",
     enforce: "pre",
     async transform(code, id) {
+      console.log(id);
       if (
         !validExtensions.has(path.extname(id)) ||
-        id.includes("node_modules")
+        id.includes("node_modules") ||
+        isStarterFile(id)
       ) {
         return null;
       }

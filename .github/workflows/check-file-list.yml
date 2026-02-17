@@ -1,0 +1,23 @@
+name: Check starter file list
+
+on:
+  pull_request:
+
+jobs:
+  check-file-list:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: node scripts/update-file-list.js
+
+      - name: Check for changes
+        run: |
+          if [ -n "$(git status --porcelain starter-files.json)" ]; then
+            echo "::error::Please run 'npm run update-file-list' and commit the changed starter-files.json"
+            exit 1
+          fi
