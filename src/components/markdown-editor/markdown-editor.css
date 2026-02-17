@@ -9,12 +9,12 @@
 
   --tw-prose-hr: hsl(var(--border));
   --tw-prose-bullets: hsl(var(--muted-foreground));
-  --tw-prose-countes: hsl(var(--muted-foreground));
+  --tw-prose-counters: hsl(var(--muted-foreground));
   --tw-prose-quotes: hsl(var(--muted-foreground));
   --tw-prose-quote-borders: hsl(var(--border));
 }
 
 .prose mark {
   color: hsl(var(--primary-foreground));
-  background-color: hsl(var(--primary))
+  background-color: hsl(var(--primary));
 }
