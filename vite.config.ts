@@ -63,6 +63,7 @@ export default defineConfig({
     ziteId(),
   ],
   resolve: {
+    dedupe: ['react', 'react-dom'],
     alias: {
       "@": path.resolve(__dirname, "./src"),
       "@zite": path.resolve(__dirname, "./src/__zite__"),
