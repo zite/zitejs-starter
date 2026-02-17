@@ -46,6 +46,7 @@
   "src/components/ui/tooltip.tsx",
   "src/hooks/use-mobile.tsx",
   "src/hooks/use-toast.ts",
+  "src/index.css",
   "src/lib/utils.ts",
   "src/main.tsx"
 ]
