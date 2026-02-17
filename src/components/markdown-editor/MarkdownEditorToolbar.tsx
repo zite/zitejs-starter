@@ -119,7 +119,6 @@ export function MarkdownEditorToolbar({
         canCode: ctx.editor.can().chain().toggleCode().run() ?? false,
         isHighlight: ctx.editor.isActive('highlight') ?? false,
         canHighlight: ctx.editor.can().chain().toggleHighlight().run() ?? false,
-        canClearMarks: ctx.editor.can().chain().unsetAllMarks().run() ?? false,
 
         // Block types
         isParagraph: ctx.editor.isActive('paragraph') ?? false,
