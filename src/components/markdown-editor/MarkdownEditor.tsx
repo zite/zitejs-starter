@@ -1,13 +1,20 @@
+import { useEffect, useRef } from "react"
 import { useEditor, EditorContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import Highlight from "@tiptap/extension-highlight"
 import Typography from "@tiptap/extension-typography"
 import Image from "@tiptap/extension-image"
-import { Markdown } from "tiptap-markdown"
+import { Markdown, type MarkdownStorage } from "tiptap-markdown"
 import { cn } from "@/lib/utils"
 import { MarkdownEditorToolbar } from "./MarkdownEditorToolbar"
 
 import './markdown-editor.css';
+
+declare module '@tiptap/core' {
+    interface Storage {
+        markdown: MarkdownStorage;
+    }
+}
 
 export interface MarkdownEditorProps {
   /** Initial markdown content to populate the editor with. */
@@ -73,6 +80,7 @@ export function MarkdownEditor({
   hideUndoRedo,
   height = "dynamic-md",
 }: MarkdownEditorProps) {
+  const valueRef = useRef(content);
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -84,9 +92,17 @@ export function MarkdownEditor({
     content,
     editable,
     onUpdate: ({ editor }) => {
-      onChange?.((editor.storage as any).markdown.getMarkdown())
+      const markdown = editor.storage.markdown.getMarkdown();
+      valueRef.current = markdown;
+      onChange?.(markdown);
     },
   })
+
+  useEffect(() => {
+    if (editor && content !== valueRef.current) {
+      editor.commands.setContent(content, { emitUpdate: false });
+    }
+  }, [content]);
 
   if (!editor) {
     return null
