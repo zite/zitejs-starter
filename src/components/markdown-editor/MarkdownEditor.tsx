@@ -102,7 +102,7 @@ export function MarkdownEditor({
     if (editor && content !== valueRef.current) {
       editor.commands.setContent(content, { emitUpdate: false });
     }
-  }, [content]);
+  }, [content, editor]);
 
   if (!editor) {
     return null

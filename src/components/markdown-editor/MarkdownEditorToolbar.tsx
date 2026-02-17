@@ -104,10 +104,6 @@ export function MarkdownEditorToolbar({
   const showBlockSection = !hideBulletList || !hideOrderedList || !hideBlockquote || !hideHorizontalRule
   const showUndoRedoSection = !hideUndoRedo
 
-  if (!showInlineSection && !showHeadingsSection && !showBlockSection && !showUndoRedoSection) {
-    return null
-  }
-
   const editorState = useEditorState({
     editor,
     selector(ctx) {
@@ -150,6 +146,10 @@ export function MarkdownEditorToolbar({
       }
     }
   });
+
+  if (!showInlineSection && !showHeadingsSection && !showBlockSection && !showUndoRedoSection) {
+    return null
+  }
 
   return (
     <div className="flex flex-wrap items-center gap-0.5 border-b border-input p-1">
