@@ -35,6 +35,7 @@ const deps = new Set([
   "react/jsx-runtime",
   "react/jsx-dev-runtime",
   "react-dom/client",
+  "react-dom",
   ...pkgDeps,
 ]);
 
