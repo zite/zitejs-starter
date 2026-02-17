@@ -29,6 +29,46 @@ const toggleOptions = [
 
 type HideFlags = Record<(typeof toggleOptions)[number]["key"], boolean>
 
+const externalContents = [
+  {
+    label: "Meeting Notes",
+    content: `## Meeting Notes\n\nDiscussed **project timeline** and upcoming milestones.\n\n- [ ] Finalize design by Friday\n- [ ] Review PR #42\n- [ ] Deploy to staging\n`,
+  },
+  {
+    label: "Bug Report",
+    content: `## Bug Report\n\n**Steps to reproduce:**\n\n1. Open the app\n2. Click on *Settings*\n3. Toggle dark mode twice\n\n> Expected: Theme switches cleanly\n> Actual: Flicker on second toggle\n`,
+  },
+  {
+    label: "Release Notes",
+    content: `## Release v2.1.0\n\nHighlights:\n\n- ==New markdown editor== with toolbar customization\n- Fixed horizontal rule rendering\n- Improved **performance** for large documents\n\n---\n\nThanks to all contributors!\n`,
+  },
+]
+
+function ExternalContentEditor() {
+  const [content, setContent] = useState(externalContents[0].content)
+
+  return (
+    <div>
+      <h2 className="mb-2 text-lg font-semibold">External Content Update</h2>
+      <p className="mb-3 text-sm text-muted-foreground">
+        Update the editor content from the outside by clicking a button.
+      </p>
+      <div className="mb-3 flex gap-2">
+        {externalContents.map(({ label, content: c }) => (
+          <button
+            key={label}
+            onClick={() => setContent(c)}
+            className="rounded-md border border-input px-3 py-1 text-sm hover:bg-accent"
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <MarkdownEditor content={content} onChange={setContent} />
+    </div>
+  )
+}
+
 function InteractiveEditor() {
   const [flags, setFlags] = useState<HideFlags>(
     () => Object.fromEntries(toggleOptions.map(({ key }) => [key, false])) as HideFlags
@@ -88,50 +128,52 @@ export function MarkdownEditorSamples() {
 
   return (
     <div className={dark ? "dark" : ""}>
-    <div className="min-h-screen bg-background text-foreground">
-    <div className="mx-auto flex max-w-3xl flex-col gap-8 p-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Markdown Editor</h1>
-        <button
-          onClick={() => setDark(!dark)}
-          className="rounded-md border border-input p-2 hover:bg-accent"
-          aria-label="Toggle theme"
-        >
-          {dark ? <Sun className="size-5" /> : <Moon className="size-5" />}
-        </button>
-      </div>
-      <div>
-        <h2 className="mb-2 text-lg font-semibold">Default Editor</h2>
-        <p className="mb-3 text-sm text-muted-foreground">
-          An empty editor ready for input.
-        </p>
-        <MarkdownEditor onChange={setOutput} />
-        {output && (
-          <pre className="mt-3 max-h-40 overflow-auto rounded-md bg-muted p-3 text-xs">
-            {output}
-          </pre>
-        )}
-      </div>
+      <div className="min-h-screen bg-background text-foreground">
+        <div className="mx-auto flex max-w-3xl flex-col gap-8 p-8">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold">Markdown Editor</h1>
+            <button
+              onClick={() => setDark(!dark)}
+              className="rounded-md border border-input p-2 hover:bg-accent"
+              aria-label="Toggle theme"
+            >
+              {dark ? <Sun className="size-5" /> : <Moon className="size-5" />}
+            </button>
+          </div>
+          <div>
+            <h2 className="mb-2 text-lg font-semibold">Default Editor</h2>
+            <p className="mb-3 text-sm text-muted-foreground">
+              An empty editor ready for input.
+            </p>
+            <MarkdownEditor onChange={setOutput} />
+            {output && (
+              <pre className="mt-3 max-h-40 overflow-auto rounded-md bg-muted p-3 text-xs">
+                {output}
+              </pre>
+            )}
+          </div>
 
-      <div>
-        <h2 className="mb-2 text-lg font-semibold">Pre-filled Editor</h2>
-        <p className="mb-3 text-sm text-muted-foreground">
-          Editor initialized with sample content.
-        </p>
-        <MarkdownEditor height="dynamic-sm" content={sampleContent} />
-      </div>
+          <div>
+            <h2 className="mb-2 text-lg font-semibold">Pre-filled Editor</h2>
+            <p className="mb-3 text-sm text-muted-foreground">
+              Editor initialized with sample content.
+            </p>
+            <MarkdownEditor height="dynamic-sm" content={sampleContent} />
+          </div>
 
-      <div>
-        <h2 className="mb-2 text-lg font-semibold">Read-only Editor</h2>
-        <p className="mb-3 text-sm text-muted-foreground">
-          Non-editable view of content — toolbar is hidden.
-        </p>
-        <MarkdownEditor content={sampleContent} editable={false} />
-      </div>
+          <div>
+            <h2 className="mb-2 text-lg font-semibold">Read-only Editor</h2>
+            <p className="mb-3 text-sm text-muted-foreground">
+              Non-editable view of content — toolbar is hidden.
+            </p>
+            <MarkdownEditor content={sampleContent} editable={false} />
+          </div>
 
-      <InteractiveEditor />
-    </div>
-    </div>
+          <ExternalContentEditor />
+
+          <InteractiveEditor />
+        </div>
+      </div>
     </div>
   )
 }

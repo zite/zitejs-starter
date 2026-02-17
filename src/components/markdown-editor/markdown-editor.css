@@ -1,0 +1,20 @@
+.prose {
+  --tw-prose-pre-bg: hsl(var(--card));
+  --tw-prose-pre-code: hsl(var(--card-foreground));
+  --tw-prose-code: hsl(var(--foreground));
+
+  --tw-prose-body: hsl(var(--foreground));
+  --tw-prose-headings: hsl(var(--foreground));
+  --tw-prose-bold: hsl(var(--foreground));
+
+  --tw-prose-hr: hsl(var(--border));
+  --tw-prose-bullets: hsl(var(--muted-foreground));
+  --tw-prose-counters: hsl(var(--muted-foreground));
+  --tw-prose-quotes: hsl(var(--muted-foreground));
+  --tw-prose-quote-borders: hsl(var(--border));
+}
+
+.prose mark {
+  color: hsl(var(--primary-foreground));
+  background-color: hsl(var(--primary));
+}
