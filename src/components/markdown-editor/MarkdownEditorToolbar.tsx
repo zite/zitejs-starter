@@ -151,7 +151,7 @@ export function MarkdownEditorToolbar({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-0.5 border-b border-input p-1">
+    <div className="flex flex-wrap items-center gap-0.5 border-b border-input p-1 px-[max(calc(var(--radius)-1.5rem),0.25rem)]">
       {showInlineSection && (
         <>
           {!hideBold && (
