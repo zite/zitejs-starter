@@ -122,8 +122,48 @@ function InteractiveEditor() {
   )
 }
 
-export function MarkdownEditorSamples() {
+export function MarkdownEditorSamplesContent() {
   const [output, setOutput] = useState("")
+
+  return (
+    <>
+      <div>
+        <h2 className="mb-2 text-lg font-semibold">Default Editor</h2>
+        <p className="mb-3 text-sm text-muted-foreground">
+          An empty editor ready for input.
+        </p>
+        <MarkdownEditor onChange={setOutput} />
+        {output && (
+          <pre className="mt-3 max-h-40 overflow-auto rounded-md bg-muted p-3 text-xs">
+            {output}
+          </pre>
+        )}
+      </div>
+
+      <div>
+        <h2 className="mb-2 text-lg font-semibold">Pre-filled Editor</h2>
+        <p className="mb-3 text-sm text-muted-foreground">
+          Editor initialized with sample content.
+        </p>
+        <MarkdownEditor height="dynamic-sm" content={sampleContent} />
+      </div>
+
+      <div>
+        <h2 className="mb-2 text-lg font-semibold">Read-only Editor</h2>
+        <p className="mb-3 text-sm text-muted-foreground">
+          Non-editable view of content — toolbar is hidden.
+        </p>
+        <MarkdownEditor content={sampleContent} editable={false} />
+      </div>
+
+      <ExternalContentEditor />
+
+      <InteractiveEditor />
+    </>
+  )
+}
+
+export function MarkdownEditorSamples() {
   const [dark, setDark] = useState(false)
 
   return (
@@ -140,38 +180,7 @@ export function MarkdownEditorSamples() {
               {dark ? <Sun className="size-5" /> : <Moon className="size-5" />}
             </button>
           </div>
-          <div>
-            <h2 className="mb-2 text-lg font-semibold">Default Editor</h2>
-            <p className="mb-3 text-sm text-muted-foreground">
-              An empty editor ready for input.
-            </p>
-            <MarkdownEditor onChange={setOutput} />
-            {output && (
-              <pre className="mt-3 max-h-40 overflow-auto rounded-md bg-muted p-3 text-xs">
-                {output}
-              </pre>
-            )}
-          </div>
-
-          <div>
-            <h2 className="mb-2 text-lg font-semibold">Pre-filled Editor</h2>
-            <p className="mb-3 text-sm text-muted-foreground">
-              Editor initialized with sample content.
-            </p>
-            <MarkdownEditor height="dynamic-sm" content={sampleContent} />
-          </div>
-
-          <div>
-            <h2 className="mb-2 text-lg font-semibold">Read-only Editor</h2>
-            <p className="mb-3 text-sm text-muted-foreground">
-              Non-editable view of content — toolbar is hidden.
-            </p>
-            <MarkdownEditor content={sampleContent} editable={false} />
-          </div>
-
-          <ExternalContentEditor />
-
-          <InteractiveEditor />
+          <MarkdownEditorSamplesContent />
         </div>
       </div>
     </div>
