@@ -1,7 +1,26 @@
 import { useState } from "react"
+import { ChevronDown } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible"
 import "./shadows.css"
+
+const COLOR_VARS = [
+  "--background", "--foreground",
+  "--primary", "--primary-foreground",
+  "--secondary", "--secondary-foreground",
+  "--accent", "--accent-foreground",
+  "--muted", "--muted-foreground",
+  "--card", "--card-foreground",
+  "--popover", "--popover-foreground",
+  "--destructive", "--destructive-foreground",
+  "--border", "--input", "--ring",
+  "--chart-1", "--chart-2", "--chart-3", "--chart-4", "--chart-5",
+  "--sidebar-background", "--sidebar-foreground",
+  "--sidebar-primary", "--sidebar-primary-foreground",
+  "--sidebar-accent", "--sidebar-accent-foreground",
+  "--sidebar-border", "--sidebar-ring",
+] as const
 
 interface ThemeColors {
   background: string; foreground: string
@@ -593,41 +612,62 @@ export function ThemeSwitcher() {
   }
 
   return (
-    <div className="flex items-center gap-4">
-      <Select value={activeTheme} onValueChange={handleSelect}>
-        <SelectTrigger className="w-48">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {THEME_IDS.map((id) => {
-            const theme = THEMES[id]
-            return (
-              <SelectItem key={id} value={id}>
-                <div className="flex items-center gap-2">
-                  <div className="flex h-3.5 w-8 overflow-hidden rounded-sm shrink-0">
-                    {theme.previewPalette.map((color, i) => (
-                      <div key={i} className="flex-1" style={{ backgroundColor: color }} />
-                    ))}
+    <Collapsible className="flex flex-col gap-3">
+      <div className="flex items-center gap-4">
+        <Select value={activeTheme} onValueChange={handleSelect}>
+          <SelectTrigger className="w-48">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {THEME_IDS.map((id) => {
+              const theme = THEMES[id]
+              return (
+                <SelectItem key={id} value={id}>
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-3.5 w-8 overflow-hidden rounded-sm shrink-0">
+                      {theme.previewPalette.map((color, i) => (
+                        <div key={i} className="flex-1" style={{ backgroundColor: color }} />
+                      ))}
+                    </div>
+                    {theme.name}
                   </div>
-                  {theme.name}
-                </div>
-              </SelectItem>
-            )
-          })}
-        </SelectContent>
-      </Select>
+                </SelectItem>
+              )
+            })}
+          </SelectContent>
+        </Select>
 
-      <div className="flex items-center gap-3 w-48">
-        <span className="text-sm text-muted-foreground shrink-0">Radius</span>
-        <Slider
-          min={0}
-          max={3}
-          step={0.05}
-          value={[radius]}
-          onValueChange={handleRadiusChange}
-        />
-        <span className="text-sm text-muted-foreground w-10 shrink-0">{radius.toFixed(2)}</span>
+        <div className="flex items-center gap-3 w-48">
+          <span className="text-sm text-muted-foreground shrink-0">Radius</span>
+          <Slider
+            min={0}
+            max={3}
+            step={0.05}
+            value={[radius]}
+            onValueChange={handleRadiusChange}
+          />
+          <span className="text-sm text-muted-foreground w-10 shrink-0">{radius.toFixed(2)}</span>
+        </div>
+
+        <CollapsibleTrigger className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground [&[data-state=open]>svg]:rotate-180">
+          <ChevronDown className="size-4 transition-transform duration-200" />
+          Colors
+        </CollapsibleTrigger>
       </div>
-    </div>
+
+      <CollapsibleContent>
+        <div className="columns-[200px] space-y-1">
+          {COLOR_VARS.map((variable) => (
+            <div key={variable} className="flex items-center gap-2 py-0.5 break-inside-avoid">
+              <div
+                className="size-6 shrink-0 rounded-sm border border-border"
+                style={{ backgroundColor: `hsl(var(${variable}))` }}
+              />
+              <span className="text-xs text-muted-foreground font-mono truncate">{variable}</span>
+            </div>
+          ))}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   )
 }
