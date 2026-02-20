@@ -39,7 +39,7 @@ const deps = new Set([
 ]);
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   server: {
     host: "::",
     port: 8080,
@@ -67,6 +67,7 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
       "@zite": path.resolve(__dirname, "./src/__zite__"),
+      "@app": path.resolve(__dirname, command === "serve" ? './src/App.dev.tsx' : './src/App.tsx'),
       "zite-endpoints-sdk": path.resolve(__dirname, "./src/__zite__/sdk.ts"),
       "zite-auth-sdk": path.resolve(__dirname, "./src/__zite__/auth.ts"),
       "zite-file-upload-sdk": path.resolve(
@@ -79,4 +80,4 @@ export default defineConfig({
       ),
     },
   },
-});
+}));
