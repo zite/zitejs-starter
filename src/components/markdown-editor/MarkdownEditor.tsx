@@ -8,7 +8,7 @@ import { Markdown, type MarkdownStorage } from "tiptap-markdown"
 import { cn } from "@/lib/utils"
 import { MarkdownEditorToolbar } from "./MarkdownEditorToolbar"
 
-import './markdown-editor.css';
+import '../markdown/markdown.css';
 
 declare module '@tiptap/core' {
     interface Storage {
@@ -134,7 +134,7 @@ export function MarkdownEditor({
       <EditorContent
         editor={editor}
         className={cn(
-          "flex flex-col [&_.tiptap]:flex-1 text-base prose prose-sm dark:prose-invert max-w-none p-4 overflow-y-auto focus-within:outline-none [&_.tiptap]:outline-none [&_.tiptap>:first-child]:mt-0 [&_blockquote_p:first-of-type]:before:content-none [&_blockquote_p:last-of-type]:after:content-none [&_li_p]:!my-0.5 [&_code]:before:content-none [&_code]:after:content-none",
+          "flex flex-col [&_.tiptap]:flex-1 text-base prose prose-sm max-w-none p-4 overflow-y-auto focus-within:outline-none [&_.tiptap]:outline-none [&_.tiptap>:first-child]:mt-0",
           { "h-32": height === "sm", "h-64": height === "md", "h-96": height === "lg" },
           { "min-h-32": height === "dynamic-sm", "min-h-64": height === "dynamic-md", "min-h-96": height === "dynamic-lg" },
           editorClassName,
