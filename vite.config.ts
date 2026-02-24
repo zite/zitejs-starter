@@ -67,7 +67,7 @@ export default defineConfig(({ command }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
       "@zite": path.resolve(__dirname, "./src/__zite__"),
-      "@app": path.resolve(__dirname, command === "serve" ? './src/App.dev.tsx' : './src/App.tsx'),
+      "@app": path.resolve(__dirname, command === "serve" && process.env.LOCAL_DEV === "true" ? './src/App.dev.tsx' : './src/App.tsx'),
       "zite-endpoints-sdk": path.resolve(__dirname, "./src/__zite__/sdk.ts"),
       "zite-auth-sdk": path.resolve(__dirname, "./src/__zite__/auth.ts"),
       "zite-file-upload-sdk": path.resolve(
