@@ -7,7 +7,7 @@
  *
  * Script mode:
  *   node scripts/bundle-endpoints.js --script <scriptPath> [--sdk <sdkPath>]
- *   Bundles a single script file. Blocks relative/local imports for security.
+ *   Bundles a single script file, wraps the body in async execute().
  *   If --sdk is provided, resolves 'zite-integrations-backend-sdk' to that file.
  *
  * Output: JSON to stdout
