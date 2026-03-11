@@ -28,6 +28,7 @@
 import * as esbuild from 'esbuild';
 import * as path from 'path';
 import * as fs from 'fs';
+import { parse } from '@babel/parser';
 
 // ============================================================================
 // Shared config — single source of truth for esbuild aliases and externals
@@ -85,10 +86,103 @@ const BASE_BUILD_OPTIONS = {
   format: 'esm',
   platform: 'neutral',
   target: 'es2022',
+  treeShaking: true,
   external: NODE_BUILTINS,
   mainFields: ['module', 'main'],
   conditions: ['worker', 'browser', 'import', 'default'],
 };
+
+// ============================================================================
+// Tree-shaking helper — extract only the SDK imports used by each endpoint
+// ============================================================================
+
+/**
+ * Parse an endpoint file and extract the named imports from 'zite-integrations-backend-sdk'.
+ * This enables tree-shaking by only including the SDK classes/functions that are actually used.
+ *
+ * For example, if an endpoint only imports { Users, createEndpoint }, we generate a wrapper
+ * that only imports those, allowing esbuild to tree-shake the other 50+ table classes.
+ *
+ * @param {string} endpointCode - The TypeScript source code of the endpoint
+ * @returns {string[]} - Array of named imports (e.g., ['Users', 'createEndpoint', 'ZiteError'])
+ */
+function getUsedSdkImports(endpointCode) {
+  try {
+    const ast = parse(endpointCode, {
+      sourceType: 'module',
+      plugins: ['typescript'],
+    });
+
+    const usedImports = new Set();
+
+    // Walk the AST to find imports from our SDK
+    for (const node of ast.program.body) {
+      if (
+        node.type === 'ImportDeclaration' &&
+        node.source.value === 'zite-integrations-backend-sdk'
+      ) {
+        for (const spec of node.specifiers) {
+          if (spec.type === 'ImportSpecifier') {
+            // Handle both `import { Foo }` and `import { Foo as Bar }`
+            const importedName = spec.imported.name || spec.imported.value;
+            usedImports.add(importedName);
+          } else if (spec.type === 'ImportDefaultSpecifier') {
+            // Default import - shouldn't happen for our SDK, but handle gracefully
+            usedImports.add('default');
+          } else if (spec.type === 'ImportNamespaceSpecifier') {
+            // `import * as sdk` - if they do this, we can't tree-shake
+            // Return null to signal we should fall back to importing everything
+            return null;
+          }
+        }
+      }
+    }
+
+    return Array.from(usedImports);
+  } catch {
+    // If parsing fails, fall back to importing everything
+    // This is a graceful degradation - the bundling will still work, just without tree-shaking
+    return null;
+  }
+}
+
+/**
+ * Generate a wrapper that only imports the SDK classes/functions that are actually used.
+ * Falls back to importing everything if we can't determine the used imports (null case).
+ * If the endpoint doesn't use the SDK at all (empty array), generates minimal wrapper.
+ *
+ * @param {string} endpointName - The endpoint filename (without .ts)
+ * @param {string[] | null} usedImports - Array of named imports, or null to import everything
+ * @returns {string} - The wrapper code
+ */
+function generateEndpointWrapper(endpointName, usedImports) {
+  // null means we couldn't parse - fall back to importing everything
+  if (usedImports === null) {
+    return `
+import * as sdk from './__zite__/integrations';
+Object.assign(globalThis, sdk);
+import endpoint from './api/${endpointName}';
+globalThis.__endpoint = endpoint;
+`;
+  }
+
+  // Empty array means no SDK imports - minimal wrapper
+  if (usedImports.length === 0) {
+    return `
+import endpoint from './api/${endpointName}';
+globalThis.__endpoint = endpoint;
+`;
+  }
+
+  // Generate targeted imports that enable tree-shaking
+  const importList = usedImports.join(', ');
+  return `
+import { ${importList} } from './__zite__/integrations';
+Object.assign(globalThis, { ${importList} });
+import endpoint from './api/${endpointName}';
+globalThis.__endpoint = endpoint;
+`;
+}
 
 // ============================================================================
 // Endpoint mode — bundles src/api/*.ts files
@@ -137,12 +231,18 @@ async function bundleEndpoints(baseDir, endpointNames) {
   const aliasPlugin = createAliasPlugin({ baseDir });
 
   for (const name of endpointNames) {
-    const wrapperCode = `
-import * as sdk from './__zite__/integrations';
-Object.assign(globalThis, sdk);
-import endpoint from './api/${name}';
-globalThis.__endpoint = endpoint;
-`;
+    // Read the endpoint file and parse its imports for tree-shaking
+    let usedImports = null;
+    try {
+      const endpointPath = path.join(baseDir, 'src', 'api', `${name}.ts`);
+      const endpointCode = fs.readFileSync(endpointPath, 'utf-8');
+      usedImports = getUsedSdkImports(endpointCode);
+    } catch (err) {
+      // If we can't read/parse the file, fall back to importing everything
+      // The actual bundling will catch any real errors
+    }
+
+    const wrapperCode = generateEndpointWrapper(name, usedImports);
 
     try {
       const result = await esbuild.build({
