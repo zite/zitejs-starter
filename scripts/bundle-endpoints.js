@@ -95,18 +95,27 @@ const BASE_BUILD_OPTIONS = {
 // ============================================================================
 
 /**
- * Create an esbuild plugin for endpoint bundling.
+ * Create the shared esbuild alias plugin.
  * Resolves SDK and pre-bundled library imports.
- * Allows relative imports (endpoints can import from src/utils/ etc.)
+ *
+ * @param {object} options
+ * @param {string} [options.baseDir] - App base directory (endpoint mode: resolves SDK from src/__zite__/integrations.ts)
+ * @param {string} [options.sdkPath] - Direct path to SDK file (script mode: resolves SDK from temp file)
  */
-function createEndpointAliasPlugin(baseDir) {
+function createAliasPlugin({ baseDir, sdkPath } = {}) {
   return {
     name: 'zite-alias',
     setup(build) {
       // Handle zite-integrations-backend-sdk alias
-      build.onResolve({ filter: /^zite-integrations-backend-sdk$/ }, () => ({
-        path: path.resolve(baseDir, 'src/__zite__/integrations.ts'),
-      }));
+      build.onResolve({ filter: /^zite-integrations-backend-sdk$/ }, () => {
+        if (sdkPath) {
+          return { path: path.resolve(sdkPath) };
+        }
+        if (baseDir) {
+          return { path: path.resolve(baseDir, 'src/__zite__/integrations.ts') };
+        }
+        return { path: 'zite-integrations-backend-sdk', external: true };
+      });
 
       // Rewrite pre-bundled library imports to Worker Loader module paths
       for (const [pkgName, modulePath] of Object.entries(PREBUNDLED_LIBS)) {
@@ -125,7 +134,7 @@ async function bundleEndpoints(baseDir, endpointNames) {
   const bundledEndpoints = {};
   const endpointErrors = {};
 
-  const aliasPlugin = createEndpointAliasPlugin(baseDir);
+  const aliasPlugin = createAliasPlugin({ baseDir });
 
   for (const name of endpointNames) {
     const wrapperCode = `
@@ -185,64 +194,6 @@ globalThis.__endpoint = endpoint;
 // ============================================================================
 
 /**
- * Create an esbuild plugin for script bundling.
- * Resolves SDK and pre-bundled library imports, but BLOCKS relative/local imports
- * for security (scripts shouldn't read files from the sandbox filesystem).
- */
-function createScriptPlugin(sdkPath) {
-  // Build the set of allowed import specifiers
-  const allowedImports = new Set([
-    ...Object.keys(PREBUNDLED_LIBS),
-    ...Object.values(PREBUNDLED_LIBS).map(m => `./${m}`),
-    ...NODE_BUILTINS,
-  ]);
-
-  if (sdkPath) {
-    allowedImports.add('zite-integrations-backend-sdk');
-  }
-
-  return {
-    name: 'zite-script-alias',
-    setup(build) {
-      // Handle SDK alias — resolve to temp file if provided, otherwise externalize
-      build.onResolve({ filter: /^zite-integrations-backend-sdk$/ }, () => {
-        if (sdkPath) {
-          return { path: path.resolve(sdkPath) };
-        }
-        return { path: 'zite-integrations-backend-sdk', external: true };
-      });
-
-      // Rewrite pre-bundled library imports to Worker Loader module paths
-      for (const [pkgName, modulePath] of Object.entries(PREBUNDLED_LIBS)) {
-        const escapedName = pkgName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const filter = new RegExp(`^${escapedName}$`);
-        build.onResolve({ filter }, () => ({
-          path: `./${modulePath}`,
-          external: true,
-        }));
-      }
-
-      // Block all other non-entry imports (security: prevent filesystem access)
-      build.onResolve({ filter: /.*/ }, (args) => {
-        if (args.kind === 'entry-point') return undefined;
-        if (allowedImports.has(args.path)) return undefined;
-
-        // Allow sub-path imports of allowed packages (e.g. 'googleapis/v4')
-        for (const allowed of allowedImports) {
-          if (args.path.startsWith(allowed + '/')) return undefined;
-        }
-
-        return {
-          errors: [{
-            text: `Import "${args.path}" is not allowed. Scripts can only import from integration SDK packages.`,
-          }],
-        };
-      });
-    },
-  };
-}
-
-/**
  * Wrap esbuild's bundled output as an endpoint module for the CF Worker.
  * The Worker expects `globalThis.__endpoint` with an `execute` method.
  *
@@ -287,7 +238,7 @@ globalThis.__endpoint = { execute: __scriptModule.execute };
 
 async function bundleOneOffScript(scriptPath, sdkPath) {
   const rawScript = fs.readFileSync(scriptPath, 'utf-8');
-  const plugin = createScriptPlugin(sdkPath);
+  const plugin = createAliasPlugin({ sdkPath });
 
   try {
     // Pass 1: Bundle the raw user script — resolves TS, inlines non-externals,
