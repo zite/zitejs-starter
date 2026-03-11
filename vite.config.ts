@@ -58,7 +58,7 @@ export default defineConfig(({ command }) => ({
   plugins: [
     react(),
     insertHtml({
-      headPrepend: [h("script", { src: "https://zite.com/app-runtime.js" })],
+      headPrepend: [h("script", { src: process.env.VITE_APP_RUNTIME_URL || "https://zite.com/app-runtime.js" })],
     }),
     ziteId(),
   ],
