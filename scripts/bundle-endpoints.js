@@ -121,8 +121,18 @@ function getUsedSdkImports(endpointCode) {
         node.type === 'ImportDeclaration' &&
         node.source.value === 'zite-integrations-backend-sdk'
       ) {
+        // Skip type-only imports: `import type { Foo } from '...'`
+        // These don't exist at runtime and would cause "No matching export" errors
+        if (node.importKind === 'type') {
+          continue;
+        }
+
         for (const spec of node.specifiers) {
           if (spec.type === 'ImportSpecifier') {
+            // Skip individual type imports: `import { type Foo, Bar } from '...'`
+            if (spec.importKind === 'type') {
+              continue;
+            }
             // Handle both `import { Foo }` and `import { Foo as Bar }`
             const importedName = spec.imported.name || spec.imported.value;
             usedImports.add(importedName);
@@ -147,15 +157,89 @@ function getUsedSdkImports(endpointCode) {
 }
 
 /**
+ * Parse the SDK file and extract which exports are type-only vs value exports.
+ * Type-only exports (`export type Foo = ...`) don't exist at runtime.
+ * Value exports (`export class Foo`, `export function foo`, `export { foo }`) exist at runtime.
+ *
+ * @param {string} sdkCode - The TypeScript source code of the SDK
+ * @returns {{ typeExports: Set<string>, valueExports: Set<string> } | null}
+ */
+function getSdkExportKinds(sdkCode) {
+  try {
+    const ast = parse(sdkCode, {
+      sourceType: 'module',
+      plugins: ['typescript'],
+    });
+
+    const typeExports = new Set();
+    const valueExports = new Set();
+
+    for (const node of ast.program.body) {
+      // export type Foo = ...
+      if (node.type === 'ExportNamedDeclaration') {
+        // Type alias: export type Foo = ...
+        if (node.declaration?.type === 'TSTypeAliasDeclaration') {
+          typeExports.add(node.declaration.id.name);
+        }
+        // Interface: export interface Foo { ... }
+        else if (node.declaration?.type === 'TSInterfaceDeclaration') {
+          typeExports.add(node.declaration.id.name);
+        }
+        // Class: export class Foo { ... }
+        else if (node.declaration?.type === 'ClassDeclaration') {
+          valueExports.add(node.declaration.id.name);
+        }
+        // Function: export function foo() { ... }
+        else if (node.declaration?.type === 'FunctionDeclaration') {
+          valueExports.add(node.declaration.id.name);
+        }
+        // Variable: export const foo = ...
+        else if (node.declaration?.type === 'VariableDeclaration') {
+          for (const decl of node.declaration.declarations) {
+            if (decl.id.type === 'Identifier') {
+              valueExports.add(decl.id.name);
+            }
+          }
+        }
+        // Re-export: export { Foo, Bar }
+        else if (node.specifiers && node.specifiers.length > 0) {
+          for (const spec of node.specifiers) {
+            if (spec.type === 'ExportSpecifier') {
+              const name = spec.exported.name || spec.exported.value;
+              // Check if it's a type-only re-export: export { type Foo }
+              if (spec.exportKind === 'type') {
+                typeExports.add(name);
+              } else {
+                // For re-exports, we assume they're values unless marked as type
+                // The actual kind depends on what's being re-exported
+                valueExports.add(name);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return { typeExports, valueExports };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Generate a wrapper that only imports the SDK classes/functions that are actually used.
  * Falls back to importing everything if we can't determine the used imports (null case).
  * If the endpoint doesn't use the SDK at all (empty array), generates minimal wrapper.
  *
+ * IMPORTANT: Types (e.g., UsersRecordType) must be imported with `import type` and
+ * cannot be assigned to globalThis. Only values (classes, functions) go in globalThis.
+ *
  * @param {string} endpointName - The endpoint filename (without .ts)
  * @param {string[] | null} usedImports - Array of named imports, or null to import everything
+ * @param {{ typeExports: Set<string>, valueExports: Set<string> } | null} sdkExportKinds - Export kinds from SDK parsing
  * @returns {string} - The wrapper code
  */
-function generateEndpointWrapper(endpointName, usedImports) {
+function generateEndpointWrapper(endpointName, usedImports, sdkExportKinds) {
   // null means we couldn't parse - fall back to importing everything
   if (usedImports === null) {
     return `
@@ -174,11 +258,37 @@ globalThis.__endpoint = endpoint;
 `;
   }
 
-  // Generate targeted imports that enable tree-shaking
-  const importList = usedImports.join(', ');
+  // Separate type imports from value imports based on SDK parsing
+  // If we couldn't parse the SDK, treat everything as a value (will error if wrong, but that's correct)
+  const typeImports = [];
+  const valueImports = [];
+
+  for (const name of usedImports) {
+    if (sdkExportKinds?.typeExports.has(name)) {
+      typeImports.push(name);
+    } else {
+      // If it's in valueExports OR we don't know, treat as value
+      valueImports.push(name);
+    }
+  }
+
+  // Build the import statements
+  const importStatements = [];
+  if (typeImports.length > 0) {
+    importStatements.push(`import type { ${typeImports.join(', ')} } from './__zite__/integrations';`);
+  }
+  if (valueImports.length > 0) {
+    importStatements.push(`import { ${valueImports.join(', ')} } from './__zite__/integrations';`);
+  }
+
+  // Only assign values to globalThis (types don't exist at runtime)
+  const globalAssign = valueImports.length > 0
+    ? `Object.assign(globalThis, { ${valueImports.join(', ')} });`
+    : '';
+
   return `
-import { ${importList} } from './__zite__/integrations';
-Object.assign(globalThis, { ${importList} });
+${importStatements.join('\n')}
+${globalAssign}
 import endpoint from './api/${endpointName}';
 globalThis.__endpoint = endpoint;
 `;
@@ -230,6 +340,17 @@ async function bundleEndpoints(baseDir, endpointNames) {
 
   const aliasPlugin = createAliasPlugin({ baseDir });
 
+  // Parse the SDK file once to determine which exports are types vs values
+  // This is used to generate correct import statements (import type vs import)
+  let sdkExportKinds = null;
+  try {
+    const sdkPath = path.join(baseDir, 'src', '__zite__', 'integrations.ts');
+    const sdkCode = fs.readFileSync(sdkPath, 'utf-8');
+    sdkExportKinds = getSdkExportKinds(sdkCode);
+  } catch (err) {
+    // If we can't read/parse the SDK, we'll fall back to treating everything as values
+  }
+
   for (const name of endpointNames) {
     // Read the endpoint file and parse its imports for tree-shaking
     let usedImports = null;
@@ -242,7 +363,7 @@ async function bundleEndpoints(baseDir, endpointNames) {
       // The actual bundling will catch any real errors
     }
 
-    const wrapperCode = generateEndpointWrapper(name, usedImports);
+    const wrapperCode = generateEndpointWrapper(name, usedImports, sdkExportKinds);
 
     try {
       const result = await esbuild.build({
