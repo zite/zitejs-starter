@@ -414,60 +414,83 @@ async function bundleEndpoints(baseDir, endpointNames) {
 // Script mode — bundles a single one-off script
 // ============================================================================
 
-/**
- * Wrap esbuild's bundled output as an endpoint module for the CF Worker.
- * The Worker expects `globalThis.__endpoint` with an `execute` method.
- *
- * We split on esbuild's OUTPUT (not user code) — esbuild always generates
- * import statements in a deterministic single-line format at the top of the
- * file, so this split is safe and reliable.
- */
-function wrapBundledAsEndpoint(bundledCode) {
-  const lines = bundledCode.split('\n');
-
-  // esbuild puts all imports at the top in single-line format:
-  //   import x from "./module.js";
-  //   import {a, b} from "./module.js";
-  let lastImportLine = -1;
-  for (let i = 0; i < lines.length; i++) {
-    const trimmed = lines[i].trimStart();
-    if (trimmed.startsWith('import ') || trimmed.startsWith('import{')) {
-      lastImportLine = i;
-    } else if (trimmed.startsWith('//') || trimmed.length === 0) {
-      // Skip comments (e.g. esbuild's "// <stdin>") and blank lines
-      continue;
-    } else {
-      // First real non-import line — all imports are above
-      break;
-    }
-  }
-
-  const importSection = lines.slice(0, lastImportLine + 1).join('\n');
-  const bodySection = lines.slice(lastImportLine + 1).join('\n    ');
-
-  return `${importSection}
-
-const __scriptModule = {
-  async execute() {
-    ${bodySection}
-  }
-};
-
-globalThis.__endpoint = { execute: __scriptModule.execute };
-`;
-}
-
 async function bundleOneOffScript(scriptPath, sdkPath) {
   const rawScript = fs.readFileSync(scriptPath, 'utf-8');
   const plugin = createAliasPlugin({ sdkPath });
 
+  // Split imports from body so we can wrap the body in an async function
+  // before esbuild sees it. This allows `return` in user scripts.
+  // Handles multi-line imports (e.g. `import {\n  A,\n  B,\n} from '...'`).
+  const lines = rawScript.split('\n');
+  const importLines = [];
+  const bodyLines = [];
+  let i = 0;
+  let inImport = false;
+
+  while (i < lines.length) {
+    const trimmed = lines[i].trimStart();
+
+    if (inImport) {
+      // Continue collecting lines until the import's closing `from '...'` line
+      importLines.push(lines[i]);
+      if (trimmed.match(/from\s+['"`]/)) {
+        inImport = false;
+      }
+      i++;
+      continue;
+    }
+
+    // Blank lines and comments — only keep in imports if more imports follow
+    if (trimmed.length === 0 || trimmed.startsWith('//')) {
+      let hasMoreImports = false;
+      for (let j = i + 1; j < lines.length; j++) {
+        const t = lines[j].trimStart();
+        if (t.length === 0 || t.startsWith('//')) continue;
+        if (t.startsWith('import ') || t.startsWith('import{')) {
+          hasMoreImports = true;
+        }
+        break;
+      }
+      if (hasMoreImports) {
+        importLines.push(lines[i]);
+        i++;
+        continue;
+      }
+      break;
+    }
+
+    if (trimmed.startsWith('import ') || trimmed.startsWith('import{')) {
+      importLines.push(lines[i]);
+      // Complete single-line import: has `from` clause or is a side-effect import
+      const isSingleLine = trimmed.match(/from\s+['"`]/) || trimmed.match(/^import\s+['"`]/);
+      if (!isSingleLine) {
+        inImport = true;
+      }
+      i++;
+      continue;
+    }
+
+    // First non-import line — rest is body
+    break;
+  }
+
+  while (i < lines.length) {
+    bodyLines.push(lines[i]);
+    i++;
+  }
+
+  const wrappedScript = `${importLines.join('\n')}
+export async function execute() {
+${bodyLines.join('\n')}
+}`;
+
   try {
-    // Pass 1: Bundle the raw user script — resolves TS, inlines non-externals,
+    // Pass 1: Bundle the wrapped script — resolves TS, inlines non-externals,
     // rewrites pre-bundled libs to worker module paths.
     const result = await esbuild.build({
       ...BASE_BUILD_OPTIONS,
       stdin: {
-        contents: rawScript,
+        contents: wrappedScript,
         loader: 'ts',
         resolveDir: '/workspace',
       },
@@ -488,9 +511,13 @@ async function bundleOneOffScript(scriptPath, sdkPath) {
       process.exit(1);
     }
 
-    // Pass 2: Wrap the bundled output — split esbuild's deterministic import
-    // lines from the body, then wrap the body in async execute().
-    const bundledCode = wrapBundledAsEndpoint(result.outputFiles[0].text);
+    // Pass 2: Append globalThis.__endpoint assignment.
+    // The script is already wrapped with `export async function execute()`,
+    // so we just need to wire it up for the CF Worker.
+    const esbuildOutput = result.outputFiles[0].text;
+    const bundledCode = `${esbuildOutput}
+globalThis.__endpoint = { execute };
+`;
     console.log(JSON.stringify({ bundledCode }));
   } catch (err) {
     if (err.errors && Array.isArray(err.errors)) {
