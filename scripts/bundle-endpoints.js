@@ -25,10 +25,10 @@
  * and they will be resolved at runtime from the pre-bundled modules.
  */
 
-import * as esbuild from 'esbuild';
-import * as path from 'path';
-import * as fs from 'fs';
-import { parse } from '@babel/parser';
+import * as esbuild from "esbuild";
+import * as path from "path";
+import * as fs from "fs";
+import { parse } from "@babel/parser";
 
 // ============================================================================
 // Shared config — single source of truth for esbuild aliases and externals
@@ -38,16 +38,46 @@ import { parse } from '@babel/parser';
  * Node.js built-ins to externalize (CF Workers provides these via nodejs_compat)
  */
 const _NODE_BUILTIN_NAMES = [
-  'http', 'https', 'http2', 'stream', 'buffer', 'util', 'events', 'crypto',
-  'path', 'fs', 'url', 'querystring', 'zlib', 'net', 'tls', 'os',
-  'assert', 'process', 'child_process', 'cluster', 'dgram', 'dns',
-  'inspector', 'module', 'perf_hooks', 'readline', 'repl',
-  'string_decoder', 'timers', 'tty', 'v8', 'vm', 'worker_threads',
-  'async_hooks', 'trace_events', 'punycode',
+  "http",
+  "https",
+  "http2",
+  "stream",
+  "buffer",
+  "util",
+  "events",
+  "crypto",
+  "path",
+  "fs",
+  "url",
+  "querystring",
+  "zlib",
+  "net",
+  "tls",
+  "os",
+  "assert",
+  "process",
+  "child_process",
+  "cluster",
+  "dgram",
+  "dns",
+  "inspector",
+  "module",
+  "perf_hooks",
+  "readline",
+  "repl",
+  "string_decoder",
+  "timers",
+  "tty",
+  "v8",
+  "vm",
+  "worker_threads",
+  "async_hooks",
+  "trace_events",
+  "punycode",
 ];
 
 /** Externalize both 'fs' and 'node:fs' forms */
-const NODE_BUILTINS = _NODE_BUILTIN_NAMES.flatMap(m => [m, `node:${m}`]);
+const NODE_BUILTINS = _NODE_BUILTIN_NAMES.flatMap((m) => [m, `node:${m}`]);
 
 /**
  * Pre-bundled libraries provided by cloudflare-lambda as Worker Loader modules
@@ -56,21 +86,21 @@ const NODE_BUILTINS = _NODE_BUILTIN_NAMES.flatMap(m => [m, `node:${m}`]);
  */
 const PREBUNDLED_LIBS = {
   // Zite runtime - always loaded (log collector, helpers, ZiteError, createEndpoint)
-  '@zite/endpoints-runtime-sdk': '__zite-runtime__.js',
+  "@zite/endpoints-runtime-sdk": "__zite-runtime__.js",
   // Zod - always loaded (small, commonly used for validation)
-  'zod': '__zod__.js',
+  zod: "__zod__.js",
   // SDK libraries - lazily loaded based on app's integrations
-  'openai': '__openai__.js',
-  '@anthropic-ai/sdk': '__anthropic__.js',
-  'stripe': '__stripe__.js',
-  'airtable': '__airtable__.js',
-  '@notionhq/client': '__notion__.js',
-  '@slack/web-api': '__slack__.js',
-  'googleapis': '__googleapis__.js',
-  '@mailchimp/mailchimp_marketing': '__mailchimp__.js',
-  '@hubspot/api-client': '__hubspot__.js',
-  '@linear/sdk': '__linear__.js',
-  '@microsoft/microsoft-graph-client': '__microsoft-graph__.js',
+  openai: "__openai__.js",
+  "@anthropic-ai/sdk": "__anthropic__.js",
+  stripe: "__stripe__.js",
+  airtable: "__airtable__.js",
+  "@notionhq/client": "__notion__.js",
+  "@slack/web-api": "__slack__.js",
+  googleapis: "__googleapis__.js",
+  "@mailchimp/mailchimp_marketing": "__mailchimp__.js",
+  "@hubspot/api-client": "__hubspot__.js",
+  "@linear/sdk": "__linear__.js",
+  "@microsoft/microsoft-graph-client": "__microsoft-graph__.js",
 };
 
 // ============================================================================
@@ -83,13 +113,13 @@ const PREBUNDLED_LIBS = {
 const BASE_BUILD_OPTIONS = {
   bundle: true,
   write: false,
-  format: 'esm',
-  platform: 'neutral',
-  target: 'es2022',
+  format: "esm",
+  platform: "neutral",
+  target: "es2022",
   treeShaking: true,
   external: NODE_BUILTINS,
-  mainFields: ['module', 'main'],
-  conditions: ['worker', 'browser', 'import', 'default'],
+  mainFields: ["module", "main"],
+  conditions: ["worker", "browser", "import", "default"],
 };
 
 // ============================================================================
@@ -109,8 +139,8 @@ const BASE_BUILD_OPTIONS = {
 function getUsedSdkImports(endpointCode) {
   try {
     const ast = parse(endpointCode, {
-      sourceType: 'module',
-      plugins: ['typescript'],
+      sourceType: "module",
+      plugins: ["typescript"],
     });
 
     const usedImports = new Set();
@@ -118,28 +148,28 @@ function getUsedSdkImports(endpointCode) {
     // Walk the AST to find imports from our SDK
     for (const node of ast.program.body) {
       if (
-        node.type === 'ImportDeclaration' &&
-        node.source.value === 'zite-integrations-backend-sdk'
+        node.type === "ImportDeclaration" &&
+        node.source.value === "zite-integrations-backend-sdk"
       ) {
         // Skip type-only imports: `import type { Foo } from '...'`
         // These don't exist at runtime and would cause "No matching export" errors
-        if (node.importKind === 'type') {
+        if (node.importKind === "type") {
           continue;
         }
 
         for (const spec of node.specifiers) {
-          if (spec.type === 'ImportSpecifier') {
+          if (spec.type === "ImportSpecifier") {
             // Skip individual type imports: `import { type Foo, Bar } from '...'`
-            if (spec.importKind === 'type') {
+            if (spec.importKind === "type") {
               continue;
             }
             // Handle both `import { Foo }` and `import { Foo as Bar }`
             const importedName = spec.imported.name || spec.imported.value;
             usedImports.add(importedName);
-          } else if (spec.type === 'ImportDefaultSpecifier') {
+          } else if (spec.type === "ImportDefaultSpecifier") {
             // Default import - shouldn't happen for our SDK, but handle gracefully
-            usedImports.add('default');
-          } else if (spec.type === 'ImportNamespaceSpecifier') {
+            usedImports.add("default");
+          } else if (spec.type === "ImportNamespaceSpecifier") {
             // `import * as sdk` - if they do this, we can't tree-shake
             // Return null to signal we should fall back to importing everything
             return null;
@@ -167,8 +197,8 @@ function getUsedSdkImports(endpointCode) {
 function getSdkExportKinds(sdkCode) {
   try {
     const ast = parse(sdkCode, {
-      sourceType: 'module',
-      plugins: ['typescript'],
+      sourceType: "module",
+      plugins: ["typescript"],
     });
 
     const typeExports = new Set();
@@ -176,27 +206,27 @@ function getSdkExportKinds(sdkCode) {
 
     for (const node of ast.program.body) {
       // export type Foo = ...
-      if (node.type === 'ExportNamedDeclaration') {
+      if (node.type === "ExportNamedDeclaration") {
         // Type alias: export type Foo = ...
-        if (node.declaration?.type === 'TSTypeAliasDeclaration') {
+        if (node.declaration?.type === "TSTypeAliasDeclaration") {
           typeExports.add(node.declaration.id.name);
         }
         // Interface: export interface Foo { ... }
-        else if (node.declaration?.type === 'TSInterfaceDeclaration') {
+        else if (node.declaration?.type === "TSInterfaceDeclaration") {
           typeExports.add(node.declaration.id.name);
         }
         // Class: export class Foo { ... }
-        else if (node.declaration?.type === 'ClassDeclaration') {
+        else if (node.declaration?.type === "ClassDeclaration") {
           valueExports.add(node.declaration.id.name);
         }
         // Function: export function foo() { ... }
-        else if (node.declaration?.type === 'FunctionDeclaration') {
+        else if (node.declaration?.type === "FunctionDeclaration") {
           valueExports.add(node.declaration.id.name);
         }
         // Variable: export const foo = ...
-        else if (node.declaration?.type === 'VariableDeclaration') {
+        else if (node.declaration?.type === "VariableDeclaration") {
           for (const decl of node.declaration.declarations) {
-            if (decl.id.type === 'Identifier') {
+            if (decl.id.type === "Identifier") {
               valueExports.add(decl.id.name);
             }
           }
@@ -204,10 +234,10 @@ function getSdkExportKinds(sdkCode) {
         // Re-export: export { Foo, Bar }
         else if (node.specifiers && node.specifiers.length > 0) {
           for (const spec of node.specifiers) {
-            if (spec.type === 'ExportSpecifier') {
+            if (spec.type === "ExportSpecifier") {
               const name = spec.exported.name || spec.exported.value;
               // Check if it's a type-only re-export: export { type Foo }
-              if (spec.exportKind === 'type') {
+              if (spec.exportKind === "type") {
                 typeExports.add(name);
               } else {
                 // For re-exports, we assume they're values unless marked as type
@@ -275,19 +305,24 @@ globalThis.__endpoint = endpoint;
   // Build the import statements
   const importStatements = [];
   if (typeImports.length > 0) {
-    importStatements.push(`import type { ${typeImports.join(', ')} } from './__zite__/integrations';`);
+    importStatements.push(
+      `import type { ${typeImports.join(", ")} } from './__zite__/integrations';`
+    );
   }
   if (valueImports.length > 0) {
-    importStatements.push(`import { ${valueImports.join(', ')} } from './__zite__/integrations';`);
+    importStatements.push(
+      `import { ${valueImports.join(", ")} } from './__zite__/integrations';`
+    );
   }
 
   // Only assign values to globalThis (types don't exist at runtime)
-  const globalAssign = valueImports.length > 0
-    ? `Object.assign(globalThis, { ${valueImports.join(', ')} });`
-    : '';
+  const globalAssign =
+    valueImports.length > 0
+      ? `Object.assign(globalThis, { ${valueImports.join(", ")} });`
+      : "";
 
   return `
-${importStatements.join('\n')}
+${importStatements.join("\n")}
 ${globalAssign}
 import endpoint from './api/${endpointName}';
 globalThis.__endpoint = endpoint;
@@ -308,7 +343,7 @@ globalThis.__endpoint = endpoint;
  */
 function createAliasPlugin({ baseDir, sdkPath } = {}) {
   return {
-    name: 'zite-alias',
+    name: "zite-alias",
     setup(build) {
       // Handle zite-integrations-backend-sdk alias
       build.onResolve({ filter: /^zite-integrations-backend-sdk$/ }, () => {
@@ -316,14 +351,16 @@ function createAliasPlugin({ baseDir, sdkPath } = {}) {
           return { path: path.resolve(sdkPath) };
         }
         if (baseDir) {
-          return { path: path.resolve(baseDir, 'src/__zite__/integrations.ts') };
+          return {
+            path: path.resolve(baseDir, "src/__zite__/integrations.ts"),
+          };
         }
-        return { path: 'zite-integrations-backend-sdk', external: true };
+        return { path: "zite-integrations-backend-sdk", external: true };
       });
 
       // Rewrite pre-bundled library imports to Worker Loader module paths
       for (const [pkgName, modulePath] of Object.entries(PREBUNDLED_LIBS)) {
-        const escapedName = pkgName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const escapedName = pkgName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         const filter = new RegExp(`^${escapedName}$`);
         build.onResolve({ filter }, () => ({
           path: `./${modulePath}`,
@@ -344,8 +381,8 @@ async function bundleEndpoints(baseDir, endpointNames) {
   // This is used to generate correct import statements (import type vs import)
   let sdkExportKinds = null;
   try {
-    const sdkPath = path.join(baseDir, 'src', '__zite__', 'integrations.ts');
-    const sdkCode = fs.readFileSync(sdkPath, 'utf-8');
+    const sdkPath = path.join(baseDir, "src", "__zite__", "integrations.ts");
+    const sdkCode = fs.readFileSync(sdkPath, "utf-8");
     sdkExportKinds = getSdkExportKinds(sdkCode);
   } catch (err) {
     // If we can't read/parse the SDK, we'll fall back to treating everything as values
@@ -355,15 +392,19 @@ async function bundleEndpoints(baseDir, endpointNames) {
     // Read the endpoint file and parse its imports for tree-shaking
     let usedImports = null;
     try {
-      const endpointPath = path.join(baseDir, 'src', 'api', `${name}.ts`);
-      const endpointCode = fs.readFileSync(endpointPath, 'utf-8');
+      const endpointPath = path.join(baseDir, "src", "api", `${name}.ts`);
+      const endpointCode = fs.readFileSync(endpointPath, "utf-8");
       usedImports = getUsedSdkImports(endpointCode);
     } catch (err) {
       // If we can't read/parse the file, fall back to importing everything
       // The actual bundling will catch any real errors
     }
 
-    const wrapperCode = generateEndpointWrapper(name, usedImports, sdkExportKinds);
+    const wrapperCode = generateEndpointWrapper(
+      name,
+      usedImports,
+      sdkExportKinds
+    );
 
     try {
       const result = await esbuild.build({
@@ -371,43 +412,47 @@ async function bundleEndpoints(baseDir, endpointNames) {
         stdin: {
           contents: wrapperCode,
           resolveDir: `${baseDir}/src`,
-          loader: 'ts',
+          loader: "ts",
         },
-        logLevel: 'warning',
+        logLevel: "warning",
         plugins: [aliasPlugin],
       });
 
       if (result.warnings && result.warnings.length > 0) {
-        const warningMessages = result.warnings.map(w =>
-          `${w.location?.file || 'unknown'}:${w.location?.line || '?'} - ${w.text}`
+        const warningMessages = result.warnings.map(
+          (w) =>
+            `${w.location?.file || "unknown"}:${w.location?.line || "?"} - ${w.text}`
         );
-        endpointErrors[name] = `Warnings: ${warningMessages.join('; ')}`;
+        endpointErrors[name] = `Warnings: ${warningMessages.join("; ")}`;
       }
 
       if (result.outputFiles && result.outputFiles.length > 0) {
         bundledEndpoints[name] = result.outputFiles[0].text;
       } else {
-        endpointErrors[name] = 'No output generated';
+        endpointErrors[name] = "No output generated";
       }
     } catch (err) {
       if (err.errors && Array.isArray(err.errors)) {
-        const errorMessages = err.errors.map(e => {
+        const errorMessages = err.errors.map((e) => {
           const loc = e.location
-            ? `${e.location.file || 'unknown'}:${e.location.line || '?'}:${e.location.column || '?'}`
-            : 'unknown';
+            ? `${e.location.file || "unknown"}:${e.location.line || "?"}:${e.location.column || "?"}`
+            : "unknown";
           return `${loc} - ${e.text}`;
         });
-        endpointErrors[name] = errorMessages.join('\n');
+        endpointErrors[name] = errorMessages.join("\n");
       } else {
         endpointErrors[name] = err.message;
       }
     }
   }
 
-  console.log(JSON.stringify({
-    bundledEndpoints,
-    endpointErrors: Object.keys(endpointErrors).length > 0 ? endpointErrors : undefined,
-  }));
+  console.log(
+    JSON.stringify({
+      bundledEndpoints,
+      endpointErrors:
+        Object.keys(endpointErrors).length > 0 ? endpointErrors : undefined,
+    })
+  );
 }
 
 // ============================================================================
@@ -415,73 +460,41 @@ async function bundleEndpoints(baseDir, endpointNames) {
 // ============================================================================
 
 async function bundleOneOffScript(scriptPath, sdkPath) {
-  const rawScript = fs.readFileSync(scriptPath, 'utf-8');
+  const rawScript = fs.readFileSync(scriptPath, "utf-8");
   const plugin = createAliasPlugin({ sdkPath });
 
-  // Split imports from body so we can wrap the body in an async function
-  // before esbuild sees it. This allows `return` in user scripts.
-  // Handles multi-line imports (e.g. `import {\n  A,\n  B,\n} from '...'`).
-  const lines = rawScript.split('\n');
-  const importLines = [];
-  const bodyLines = [];
-  let i = 0;
-  let inImport = false;
+  // Split imports from body using the AST so we can wrap the body in an
+  // async function before esbuild sees it. This allows `return` in user scripts.
+  let importSection = "";
+  let bodySection = rawScript;
 
-  while (i < lines.length) {
-    const trimmed = lines[i].trimStart();
+  try {
+    const ast = parse(rawScript, {
+      sourceType: "module",
+      plugins: ["typescript"],
+      allowReturnOutsideFunction: true,
+    });
 
-    if (inImport) {
-      // Continue collecting lines until the import's closing `from '...'` line
-      importLines.push(lines[i]);
-      if (trimmed.match(/from\s+['"`]/)) {
-        inImport = false;
+    // Find the end position of the last ImportDeclaration
+    let lastImportEnd = 0;
+    for (const node of ast.program.body) {
+      if (node.type === "ImportDeclaration") {
+        lastImportEnd = node.end;
       }
-      i++;
-      continue;
     }
 
-    // Blank lines and comments — only keep in imports if more imports follow
-    if (trimmed.length === 0 || trimmed.startsWith('//')) {
-      let hasMoreImports = false;
-      for (let j = i + 1; j < lines.length; j++) {
-        const t = lines[j].trimStart();
-        if (t.length === 0 || t.startsWith('//')) continue;
-        if (t.startsWith('import ') || t.startsWith('import{')) {
-          hasMoreImports = true;
-        }
-        break;
-      }
-      if (hasMoreImports) {
-        importLines.push(lines[i]);
-        i++;
-        continue;
-      }
-      break;
+    if (lastImportEnd > 0) {
+      importSection = rawScript.slice(0, lastImportEnd);
+      bodySection = rawScript.slice(lastImportEnd);
     }
-
-    if (trimmed.startsWith('import ') || trimmed.startsWith('import{')) {
-      importLines.push(lines[i]);
-      // Complete single-line import: has `from` clause or is a side-effect import
-      const isSingleLine = trimmed.match(/from\s+['"`]/) || trimmed.match(/^import\s+['"`]/);
-      if (!isSingleLine) {
-        inImport = true;
-      }
-      i++;
-      continue;
-    }
-
-    // First non-import line — rest is body
-    break;
+  } catch {
+    // If parsing fails, treat the entire script as body (no imports).
+    // esbuild will surface the real syntax error.
   }
 
-  while (i < lines.length) {
-    bodyLines.push(lines[i]);
-    i++;
-  }
-
-  const wrappedScript = `${importLines.join('\n')}
+  const wrappedScript = `${importSection}
 export async function execute() {
-${bodyLines.join('\n')}
+${bodySection}
 }`;
 
   try {
@@ -491,23 +504,25 @@ ${bodyLines.join('\n')}
       ...BASE_BUILD_OPTIONS,
       stdin: {
         contents: wrappedScript,
-        loader: 'ts',
-        resolveDir: '/workspace',
+        loader: "ts",
+        resolveDir: "/workspace",
       },
       minify: false,
-      logLevel: 'silent',
+      logLevel: "silent",
       plugins: [plugin],
     });
 
     if (result.errors.length > 0) {
-      console.log(JSON.stringify({
-        error: result.errors.map(e => e.text).join('\n'),
-      }));
+      console.log(
+        JSON.stringify({
+          error: result.errors.map((e) => e.text).join("\n"),
+        })
+      );
       process.exit(1);
     }
 
     if (!result.outputFiles || result.outputFiles.length === 0) {
-      console.log(JSON.stringify({ error: 'esbuild produced no output' }));
+      console.log(JSON.stringify({ error: "esbuild produced no output" }));
       process.exit(1);
     }
 
@@ -521,13 +536,13 @@ globalThis.__endpoint = { execute };
     console.log(JSON.stringify({ bundledCode }));
   } catch (err) {
     if (err.errors && Array.isArray(err.errors)) {
-      const errorMessages = err.errors.map(e => {
+      const errorMessages = err.errors.map((e) => {
         const loc = e.location
-          ? `${e.location.file || 'unknown'}:${e.location.line || '?'}`
-          : 'unknown';
+          ? `${e.location.file || "unknown"}:${e.location.line || "?"}`
+          : "unknown";
         return `${loc} - ${e.text}`;
       });
-      console.log(JSON.stringify({ error: errorMessages.join('\n') }));
+      console.log(JSON.stringify({ error: errorMessages.join("\n") }));
     } else {
       console.log(JSON.stringify({ error: err.message || String(err) }));
     }
@@ -543,15 +558,19 @@ async function main() {
   const args = process.argv.slice(2);
 
   // Script mode: --script <path> [--sdk <path>]
-  const scriptFlagIndex = args.indexOf('--script');
+  const scriptFlagIndex = args.indexOf("--script");
   if (scriptFlagIndex !== -1) {
     const scriptPath = args[scriptFlagIndex + 1];
     if (!scriptPath) {
-      console.log(JSON.stringify({ error: 'Usage: --script <scriptPath> [--sdk <sdkPath>]' }));
+      console.log(
+        JSON.stringify({
+          error: "Usage: --script <scriptPath> [--sdk <sdkPath>]",
+        })
+      );
       process.exit(1);
     }
 
-    const sdkFlagIndex = args.indexOf('--sdk');
+    const sdkFlagIndex = args.indexOf("--sdk");
     const sdkPath = sdkFlagIndex !== -1 ? args[sdkFlagIndex + 1] : undefined;
 
     return bundleOneOffScript(scriptPath, sdkPath);
@@ -559,9 +578,12 @@ async function main() {
 
   // Endpoint mode: <baseDir> <endpoint1> [endpoint2] ...
   if (args.length < 2) {
-    console.log(JSON.stringify({
-      error: 'Usage: node bundle-endpoints.js <baseDir> <endpoint1> [endpoint2] ...\n       node bundle-endpoints.js --script <scriptPath> [--sdk <sdkPath>]'
-    }));
+    console.log(
+      JSON.stringify({
+        error:
+          "Usage: node bundle-endpoints.js <baseDir> <endpoint1> [endpoint2] ...\n       node bundle-endpoints.js --script <scriptPath> [--sdk <sdkPath>]",
+      })
+    );
     process.exit(1);
   }
 
@@ -569,7 +591,7 @@ async function main() {
   return bundleEndpoints(baseDir, endpointNames);
 }
 
-main().catch(err => {
+main().catch((err) => {
   console.log(JSON.stringify({ error: err.message }));
   process.exit(1);
 });
