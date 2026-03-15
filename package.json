@@ -106,6 +106,7 @@
     "magic-string": "^0.30.17",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
+    "twilio": "^5.13.0",
     "typescript": "~5.7.3",
     "vite": "^6.2.2"
   },
