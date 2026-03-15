@@ -101,6 +101,7 @@ const PREBUNDLED_LIBS = {
   "@hubspot/api-client": "__hubspot__.js",
   "@linear/sdk": "__linear__.js",
   "@microsoft/microsoft-graph-client": "__microsoft-graph__.js",
+  twilio: "__twilio__.js",
 };
 
 // ============================================================================
