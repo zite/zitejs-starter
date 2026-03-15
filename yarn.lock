@@ -1305,7 +1305,7 @@
   resolved "https://registry.yarnpkg.com/@slack/types/-/types-2.20.1.tgz#2528592813eb088691a8665d55e21ec47ddc8217"
   integrity sha512-eWX2mdt1ktpn8+40iiMc404uGrih+2fxiky3zBcPjtXKj6HLRdYlmhrPkJi7JTJm8dpXR6BWVWEDBXtaWMKD6A==
 
-"@slack/web-api@^7.15.0":
+"@slack/web-api@^7.13.0":
   version "7.15.0"
   resolved "https://registry.yarnpkg.com/@slack/web-api/-/web-api-7.15.0.tgz#d7a11d7f4c12a855d15a7773ffa1aa199d12ee0a"
   integrity sha512-va7zYIt3QHG1x9M/jqXXRPFMoOVlVSSRHC5YH+DzKYsrz5xUKOA3lR4THsu/Zxha9N1jOndbKFKLtr0WOPW1Vw==
