@@ -338,6 +338,11 @@
   resolved "https://registry.yarnpkg.com/@floating-ui/utils/-/utils-0.2.11.tgz#a269e055e40e2f45873bae9d1a2fdccbd314ea3f"
   integrity sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg==
 
+"@graphql-typed-document-node/core@^3.2.0":
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/@graphql-typed-document-node/core/-/core-3.2.0.tgz#5f3d96ec6b2354ad6d8a28bf216a1d97b5426861"
+  integrity sha512-mB9oAsNCm9aM3/SOv4YtBMqZbYj10R7dkq8byBqxGY/ncFwhf2oQzMV+LCRlWoDSEBJ3COiR1yeDvMtsoOsuFQ==
+
 "@hookform/resolvers@^4.1.3":
   version "4.1.3"
   resolved "https://registry.yarnpkg.com/@hookform/resolvers/-/resolvers-4.1.3.tgz#97a20cc0e88d3b66c50e1e9fd6e089a94c689e07"
@@ -382,6 +387,13 @@
   dependencies:
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
+
+"@linear/sdk@^73.0.0":
+  version "73.0.0"
+  resolved "https://registry.yarnpkg.com/@linear/sdk/-/sdk-73.0.0.tgz#b9ce7790ac40503e0f4046fc6c9d91cc80fb6ff1"
+  integrity sha512-+7bMcDsDafS+468dd0JE0a0tbiBJtL253wKdKUIjGqkG6zm6Mr+WW+cvjo2Bl7T8Lldldq2cIA2tUT9ZjzJDkQ==
+  dependencies:
+    "@graphql-typed-document-node/core" "^3.2.0"
 
 "@nodelib/fs.scandir@2.1.5":
   version "2.1.5"
