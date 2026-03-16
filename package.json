@@ -88,6 +88,8 @@
   "devDependencies": {
     "@babel/parser": "^7.26.10",
     "@babel/types": "^7.26.10",
+    "@linear/sdk": "^73.0.0",
+    "@slack/web-api": "^7.13.0",
     "@types/archiver": "^6.0.3",
     "@types/body-parser": "^1.19.5",
     "@types/bun": "^1.2.5",
@@ -102,7 +104,6 @@
     "cross-env": "^10.1.0",
     "estree-walker": "^3.0.3",
     "globals": "^15.15.0",
-    "@slack/web-api": "^7.13.0",
     "googleapis": "^171.1.0",
     "magic-string": "^0.30.17",
     "postcss": "^8.5.3",
