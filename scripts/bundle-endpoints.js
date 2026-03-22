@@ -102,6 +102,7 @@ const PREBUNDLED_LIBS = {
   "@linear/sdk": "__linear__.js",
   "@microsoft/microsoft-graph-client": "__microsoft-graph__.js",
   twilio: "__twilio__.js",
+  "intercom-client": "__intercom__.js",
 };
 
 // ============================================================================
