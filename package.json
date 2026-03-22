@@ -106,6 +106,7 @@
     "estree-walker": "^3.0.3",
     "globals": "^15.15.0",
     "googleapis": "^171.1.0",
+    "intercom-client": "^7.0.3",
     "magic-string": "^0.30.17",
     "openai": "^6.17.0",
     "postcss": "^8.5.3",
