@@ -103,6 +103,7 @@ const PREBUNDLED_LIBS = {
   "@microsoft/microsoft-graph-client": "__microsoft-graph__.js",
   twilio: "__twilio__.js",
   "intercom-client": "__intercom__.js",
+  "@google/generative-ai": "__gemini__.js",
 };
 
 // ============================================================================
