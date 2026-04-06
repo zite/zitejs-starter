@@ -61,11 +61,6 @@
   resolved "https://registry.npmjs.org/@esbuild/darwin-arm64/-/darwin-arm64-0.25.12.tgz"
   integrity sha512-N3zl+lxHCifgIlcMUP5016ESkeQjLj/959RxxNYIthIg+CQHInujFuXeWbWMgnTo4cp5XVHqFPmpyu9J65C1Yg==
 
-"@fillout/api@^1.5.0":
-  version "1.5.0"
-  resolved "https://registry.npmjs.org/@fillout/api/-/api-1.5.0.tgz"
-  integrity sha512-Jhupc7oEjxcA9k4vdEItO9O+dirs8T/jPcsyNC4vErTMe+fI0r0h1mAQI/G2cx5ul9ub7BdgYGmKIqeeoxNrxw==
-
 "@fillout/react@^3.0.0":
   version "3.0.0"
   resolved "https://registry.npmjs.org/@fillout/react/-/react-3.0.0.tgz"

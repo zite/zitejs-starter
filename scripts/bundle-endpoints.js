@@ -104,7 +104,6 @@ const PREBUNDLED_LIBS = {
   twilio: "__twilio__.js",
   "intercom-client": "__intercom__.js",
   "@google/generative-ai": "__gemini__.js",
-  "@fillout/api": "__fillout-api__.js",
 };
 
 // ============================================================================
