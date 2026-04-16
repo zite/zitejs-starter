@@ -19,7 +19,7 @@
  * Worker Loader modules. They are lazily loaded on demand to minimize cold starts:
  * - zod, openai, @anthropic-ai/sdk, stripe, airtable, @notionhq/client
  * - @slack/web-api, googleapis, @mailchimp/mailchimp_marketing
- * - @hubspot/api-client, @linear/sdk, @microsoft/microsoft-graph-client
+ * - @hubspot/api-client, jsforce, @linear/sdk, @microsoft/microsoft-graph-client
  *
  * Endpoint code can import these directly (e.g., `import OpenAI from 'openai'`)
  * and they will be resolved at runtime from the pre-bundled modules.
@@ -99,6 +99,7 @@ const PREBUNDLED_LIBS = {
   googleapis: "__googleapis__.js",
   "@mailchimp/mailchimp_marketing": "__mailchimp__.js",
   "@hubspot/api-client": "__hubspot__.js",
+  jsforce: "__jsforce__.js",
   "@linear/sdk": "__linear__.js",
   "@microsoft/microsoft-graph-client": "__microsoft-graph__.js",
   twilio: "__twilio__.js",
