@@ -29,12 +29,19 @@ const pkgDeps = Object.keys(pkg.dependencies)
  *
  * So we force Vite optimize all dependencies upfront at startup. This way, we avoid having to reoptimize dependencies on file
  * changes and reload the page. Since we have so few dependencies, the impact on startup speed is minimal.
+ *
+ * Belt-and-braces: we also explicitly include `react-dom` (bare) and `react-dom/server` so that subpath imports
+ * pulled in by other deps (e.g. SSR-aware libraries, error boundaries) don't trigger a separate re-optimization
+ * pass for react-dom, which would land it on a different `?v=` hash than `react` and cause the "two versions of
+ * React" race documented above.
  */
 const deps = new Set([
   "react",
   "react/jsx-runtime",
   "react/jsx-dev-runtime",
+  "react-dom",
   "react-dom/client",
+  "react-dom/server",
   ...pkgDeps,
 ]);
 
@@ -54,6 +61,16 @@ export default defineConfig(({ command }) => ({
   },
   optimizeDeps: {
     include: [...deps],
+    // Crawl every source file at startup so Vite discovers all imported deps
+    // upfront and includes them in the initial pre-bundle pass. By default Vite
+    // only scans entries reachable from `index.html`; deps imported only in
+    // lazily-loaded routes or via dynamic imports get optimized later, which
+    // splits them onto different `?v=` hashes than react/react-dom and triggers
+    // the "two versions of React" race described above.
+    entries: [
+      "index.html",
+      "src/**/*.{ts,tsx,js,jsx}",
+    ],
   },
   plugins: [
     react(),
