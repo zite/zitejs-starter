@@ -133,4 +133,23 @@ declare module '@zite/endpoints-runtime-sdk' {
     methodName: string,
     params: unknown
   ): Promise<T>;
+
+  /**
+   * Validate raw endpoint input against the declared `inputSchema` before
+   * `execute` runs.
+   *
+   * - If `schema` is Zod-shaped (duck-typed via `safeParse`), parses the input
+   *   and returns the parsed/coerced value (so Zod transforms and defaults
+   *   flow through). On failure, throws `ZiteError({ code: 'BAD_REQUEST' })`
+   *   with a readable per-field message.
+   * - If `schema` is missing or not Zod-shaped, returns the input unchanged
+   *   (preserves backwards compatibility for endpoints without a real validator).
+   *
+   * Used internally by the generated per-app `createEndpoint` wrapper so the
+   * validation logic isn't duplicated into every endpoint bundle.
+   */
+  export function __validateEndpointInput(
+    schema: unknown,
+    input: unknown
+  ): unknown;
 }
