@@ -135,6 +135,26 @@ declare module '@zite/endpoints-runtime-sdk' {
   ): Promise<T>;
 
   /**
+   * Wrapper that routes user-facing `KV.get/set/delete/list` calls through the
+   * parent Cloudflare Worker's KVService RPC stub. Keys are scoped server-side
+   * by the running app's flowPublicId, so apps cannot read each other's data.
+   *
+   * Used internally by the auto-generated `KV` class — endpoint authors should
+   * call `KV.get(...)` / `KV.set(...)` etc., not this helper directly.
+   *
+   * Method signatures (positional after `methodName`):
+   * - `get(key: string)` → `Promise<T | undefined>`
+   * - `put(key: string, value: unknown, expirationTtlSeconds?: number)` → `Promise<void>`
+   * - `delete(key: string)` → `Promise<void>`
+   * - `list(opts?: { prefix?: string; limit?: number; cursor?: string })`
+   *     → `Promise<{ keys: string[]; cursor?: string; complete: boolean }>`
+   */
+  export function __wrapKvCall<T = unknown>(
+    methodName: 'get' | 'put' | 'delete' | 'list',
+    ...args: unknown[]
+  ): Promise<T>;
+
+  /**
    * Validate raw endpoint input against the declared `inputSchema` before
    * `execute` runs.
    *
