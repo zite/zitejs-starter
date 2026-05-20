@@ -54,7 +54,12 @@ export default defineConfig(({ command }) => ({
     hmr: {
       overlay: false,
     },
-    allowedHosts: [".zite-sandbox.com", ".zite-dev-sandbox.com"],
+    allowedHosts: [
+      ".zite-sandbox.com",
+      ".zite-dev-sandbox.com",
+      ".zite-app.com",
+      ".zite-dev-app.com",
+    ],
   },
   legacy: {
     skipWebSocketTokenCheck: true,

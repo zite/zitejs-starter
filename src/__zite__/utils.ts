@@ -22,7 +22,9 @@ export function getZiteMode(): "live" | "preview" {
   return host.startsWith("zite-editor") ||
     host.startsWith("zite-action-") ||
     host.endsWith(".zite-dev-sandbox.com") ||
-    host.endsWith(".zite-sandbox.com")
+    host.endsWith(".zite-sandbox.com") ||
+    host.endsWith(".zite-dev-app.com") ||
+    host.endsWith(".zite-app.com")
     ? "preview"
     : "live";
 }
