@@ -1,14 +1,19 @@
-import { useEffect, useRef } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Highlight from "@tiptap/extension-highlight";
-import Typography from "@tiptap/extension-typography";
-import Image from "@tiptap/extension-image";
-import { Markdown, type MarkdownStorage } from "tiptap-markdown";
-import { cn } from "@/lib/utils";
-import { MarkdownEditorToolbar } from "./MarkdownEditorToolbar";
+import { useEffect, useRef } from "react"
+import { useEditor, EditorContent } from "@tiptap/react"
+import StarterKit from "@tiptap/starter-kit"
+import Highlight from "@tiptap/extension-highlight"
+import Typography from "@tiptap/extension-typography"
+import Image from "@tiptap/extension-image"
+import { Markdown, type MarkdownStorage } from "tiptap-markdown"
+import { cn } from "@/lib/utils"
+import { MarkdownEditorToolbar } from "./MarkdownEditorToolbar"
+import {
+  createMentionExtension,
+  type CreateMentionExtensionOptions,
+} from "@/components/mentions/MentionExtension"
 
-import "../markdown/markdown.css";
+import '../markdown/markdown.css';
+import '@/components/mentions/mentions.css';
 
 declare module "@tiptap/core" {
   interface Storage {
@@ -59,6 +64,12 @@ export interface MarkdownEditorProps {
    * @default "dynamic-md"
    */
   height?: "sm" | "md" | "lg" | "dynamic-sm" | "dynamic-md" | "dynamic-lg";
+  /**
+   * Enable `@`-mentions. Pass a user source (and optional styling). Mentions
+   * serialize into the markdown string as `[@Name](mention:<uuid>)`, so no
+   * extra storage is needed. Omit to disable mentions entirely (default).
+   */
+  mentions?: CreateMentionExtensionOptions;
 }
 
 /**
@@ -117,10 +128,18 @@ export function MarkdownEditor({
   hideHorizontalRule,
   hideUndoRedo,
   height = "dynamic-md",
+  mentions,
 }: MarkdownEditorProps) {
   const valueRef = useRef(content);
   const editor = useEditor({
-    extensions: [StarterKit, Highlight, Typography, Image, Markdown],
+    extensions: [
+      StarterKit,
+      Highlight,
+      Typography,
+      Image,
+      Markdown,
+      ...(mentions ? [createMentionExtension(mentions)] : []),
+    ],
     content,
     editable,
     onUpdate: ({ editor }) => {

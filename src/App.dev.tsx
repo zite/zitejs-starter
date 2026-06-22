@@ -1,9 +1,11 @@
 import { ThemeSwitcher } from "./components/theme-switcher"
 import { MarkdownSamplesContent } from "./components/markdown/Markdown.samples"
+import { MentionsSamplesContent } from "./components/mentions/Mentions.samples"
 
 const sections = [
   { id: "theme", title: "Theme" },
   { id: "markdown", title: "Markdown" },
+  { id: "mentions", title: "Mentions" },
 ] as const
 
 function Section({ id, title }: { id: string; title: string }) {
@@ -52,6 +54,9 @@ export default function App() {
         <div className="flex flex-col gap-8">
           <Section id="markdown" title="Markdown" />
           <MarkdownSamplesContent />
+
+          <Section id="mentions" title="Mentions" />
+          <MentionsSamplesContent />
         </div>
       </div>
 

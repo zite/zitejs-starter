@@ -1,0 +1,37 @@
+/*
+ * Mention chip. Defaults to theme tokens so it matches whatever theme the
+ * consumer applies. Override any of these custom properties (globally, per
+ * theme, or on a wrapper) to restyle without touching markup:
+ *
+ *   .my-scope { --mention-bg: hsl(var(--secondary)); --mention-radius: 9999px; }
+ */
+.zite-mention {
+  --mention-bg: hsl(var(--primary) / 0.1);
+  --mention-color: hsl(var(--primary));
+  --mention-bg-hover: hsl(var(--primary) / 0.18);
+  --mention-radius: calc(var(--radius) - 0.25rem);
+
+  display: inline;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  padding: 0.0625rem 0.25rem;
+  border-radius: var(--mention-radius);
+  background-color: var(--mention-bg);
+  color: var(--mention-color);
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.zite-mention:hover {
+  background-color: var(--mention-bg-hover);
+}
+
+/* Keep prose link styling from leaking onto rendered mention anchors. */
+.prose a.zite-mention {
+  color: var(--mention-color);
+  text-decoration: none;
+  font-weight: 500;
+}
